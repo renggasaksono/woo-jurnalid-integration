@@ -1,0 +1,60 @@
+.bc-editable-link {
+    color: #428bca;
+    background: none;
+    border: none;
+    margin: 0;
+    padding: 2px 1px;
+    text-decoration: none;
+    cursor: pointer;
+    border-bottom: 1px dashed;
+    text-decoration: none;
+}
+
+.bc-editable-cancel span {
+    padding: 5px 2.5px;
+}
+
+.column-serialid {
+    width: 4%;
+    font-weight: bold;
+    text-align: center !important;
+}
+
+.column-wc_order_id {
+    width: 8%;
+}
+
+.column-sync_action {
+    width: 16%;
+}
+
+.column-sync_status {
+    width: 16%;
+}
+
+.column-sync_note {
+    width: 40%;
+}
+
+.column-sync_at {
+    width: 16%;
+}
+
+.bc-label {
+    padding: 3.5px 8px;
+  -webkit-box-decoration-break: clone;
+  -o-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.bc-label.success {
+    background: #28a745;
+    color: #fff;
+}
+.bc-label.primary {
+    background: #17a2b8;
+    color: #fff;
+}
+.bc-label.danger {
+    background: #dc3545;
+    color: #fff;
+}
