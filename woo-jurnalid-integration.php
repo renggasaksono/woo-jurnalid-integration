@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           1.5.0
+ * Version:           1.7.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -35,17 +35,17 @@ if( ! class_exists( 'WJI_Helper' ) ) {
  */
 register_activation_hook( __FILE__, 'wji_on_activation' );
 function wji_on_activation() {
-	
+    
     // Checks if WooCommerce active
-	$wc = class_exists( 'WooCommerce' );
-	if(!$wc) {
-		deactivate_plugins( basename( __FILE__ ) );
-		wp_die("Maaf, Plugin WooCommerce tidak ditemukan.");
-	}
+    $wc = class_exists( 'WooCommerce' );
+    if(!$wc) {
+        deactivate_plugins( basename( __FILE__ ) );
+        wp_die("Maaf, Plugin WooCommerce tidak ditemukan.");
+    }
 
-	// Create db tables
-	$tc = new WJI_DbTableCreator();
-	$tc->wji_create_product_mapping_table(); // buat table untuk translasi item jurnal dan woo
+    // Create db tables
+    $tc = new WJI_DbTableCreator();
+    $tc->wji_create_product_mapping_table(); // buat table untuk translasi item jurnal dan woo
     $tc->wcbc_create_order_sync_table();
 
     // Schedule cron event
@@ -74,7 +74,7 @@ function wji_deactivate() {
 /**
  * Run on plugin uninstallation
  */
-register_deactivation_hook( __FILE__, 'wji_uninstall');
+register_uninstall_hook( __FILE__, 'wji_uninstall');
 function wji_uninstall() {
     global $wpdb;
 
@@ -95,13 +95,13 @@ function wji_uninstall() {
  * Add custom plugin menu and settings page
  */
 function wji_create_settings_menu() {
- 	$plugin_page = add_options_page(
-		'Pengaturan Integrasi WooCommerce dan Jurnal.ID', //Page Title
-		'WooCommerce Jurnal.ID Integration', //Menu Title
-		'manage_woocommerce', //Capability
-		'wji_settings', //Page slug
-		'wji_settings_display' //Callback to print html
-	);
+    $plugin_page = add_options_page(
+        'Pengaturan Integrasi WooCommerce dan Jurnal.ID', //Page Title
+        'WooCommerce Jurnal.ID Integration', //Menu Title
+        'manage_woocommerce', //Capability
+        'wji_settings', //Page slug
+        'wji_settings_display' //Callback to print html
+    );
 
     // Adds my_help_tab when my_admin_page loads
     add_action( 'load-'.$plugin_page, 'wji_add_help_tab' );
@@ -161,25 +161,25 @@ function wji_settings_display() {
 
         <?php $active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'general_options'; ?>
         <h2 class="nav-tab-wrapper">
-		    <a href="?page=wji_settings&tab=general_options" class="nav-tab <?php echo $active_tab == 'general_options' ? 'nav-tab-active' : ''; ?>">Jurnal.ID Setting</a>
+            <a href="?page=wji_settings&tab=general_options" class="nav-tab <?php echo $active_tab == 'general_options' ? 'nav-tab-active' : ''; ?>">Jurnal.ID Setting</a>
             <a href="?page=wji_settings&tab=account_options" class="nav-tab <?php echo $active_tab == 'account_options' ? 'nav-tab-active' : ''; ?>">Account Mapping</a>
-		    <a href="?page=wji_settings&tab=product_options" class="nav-tab <?php echo $active_tab == 'product_options' ? 'nav-tab-active' : ''; ?>">Product Mapping</a>
+            <a href="?page=wji_settings&tab=product_options" class="nav-tab <?php echo $active_tab == 'product_options' ? 'nav-tab-active' : ''; ?>">Product Mapping</a>
             <a href="?page=wji_settings&tab=order_options" class="nav-tab <?php echo $active_tab == 'order_options' ? 'nav-tab-active' : ''; ?>">Sync History</a>
-		</h2>
+        </h2>
          
-    	<?php
+        <?php
             // Check API key valid
             $api = new WJI_IntegrationAPI;
             $validApi = $api->checkApiKeyValid();
 
-        	if( $active_tab == 'general_options' ) {
+            if( $active_tab == 'general_options' ) {
                 echo '<form method="post" action="options.php">';
                 settings_fields( 'wji_plugin_general_options' );
-	            do_settings_sections( 'wji_plugin_general_options' );
+                do_settings_sections( 'wji_plugin_general_options' );
                 do_settings_sections( 'stock_settings_section' );
-	            submit_button('Simpan Pengaturan');
+                submit_button('Simpan Pengaturan');
                 echo '</form>';
-	        } elseif( $active_tab == 'account_options' ) {
+            } elseif( $active_tab == 'account_options' ) {
                 if( !$validApi ) { echo '<p>API Key tidak valid. Silahkan mengisi API Key di Pengaturan.</p>'; }
                 else {
                     echo '<form method="post" action="options.php">';
@@ -191,9 +191,9 @@ function wji_settings_display() {
             } elseif( $active_tab == 'product_options' ) {
                 if( !$validApi ) { echo '<p>API Key tidak valid. Silahkan mengisi API Key di Pengaturan.</p>'; }
                 else {
-    	        	do_settings_sections( 'wji_plugin_product_mapping_options' );
+                    do_settings_sections( 'wji_plugin_product_mapping_options' );
                 }
-        	} elseif( $active_tab == 'order_options' ) {
+            } elseif( $active_tab == 'order_options' ) {
                 if( !$validApi ) { echo '<p>API Key tidak valid. Silahkan mengisi API Key di Pengaturan.</p>'; }
                 else {
                     do_settings_sections( 'wji_plugin_order_sync_options' );
@@ -214,14 +214,14 @@ function wji_settings_display() {
 function wji_initialize_general_options() {
  
     if( false == get_option( 'wji_plugin_general_options' ) ) {  
-	    add_option( 'wji_plugin_general_options', array() );
-	}
+        add_option( 'wji_plugin_general_options', array() );
+    }
 
-	// Register a section
+    // Register a section
     add_settings_section(
         'general_settings_section',         // ID used to identify this section and with which to register options
-        'Pengaturan Umum',       			// Title to be displayed on the administration page
-        'wji_general_options_callback', 	// Callback used to render the description of the section
+        'Pengaturan Umum',                  // Title to be displayed on the administration page
+        'wji_general_options_callback',     // Callback used to render the description of the section
         'wji_plugin_general_options'        // Page on which to add this section of options
     );
 
@@ -235,9 +235,9 @@ function wji_initialize_general_options() {
      
     // Create the settings
     add_settings_field( 
-        'api_key',                      	// ID used to identify the field throughout the theme
-        'API Key',        					// The label to the left of the option interface element
-        'wji_api_key_callback',   			// The name of the function responsible for rendering the option interface
+        'api_key',                          // ID used to identify the field throughout the theme
+        'API Key',                          // The label to the left of the option interface element
+        'wji_api_key_callback',             // The name of the function responsible for rendering the option interface
         'wji_plugin_general_options',       // The page on which this option will be displayed
         'general_settings_section'          // The name of the section to which this field belongs
     );
@@ -276,10 +276,10 @@ function wji_initialize_general_options() {
 
     // Register the fields with WordPress 
     register_setting(
-	    'wji_plugin_general_options', 	        // A settings group name
-	    'wji_plugin_general_options', 	        // The name of an option to sanitize and save
+        'wji_plugin_general_options',           // A settings group name
+        'wji_plugin_general_options',           // The name of an option to sanitize and save
         'wji_plugin_validate_general_options',  // Validate callback
-	);
+    );
 }
 add_action('admin_init', 'wji_initialize_general_options');
 
@@ -290,11 +290,11 @@ add_action('admin_init', 'wji_initialize_general_options');
 function wji_intialize_product_options() {
  
     add_settings_section(
-	    'product_settings_section',				// ID used to identify this section and with which to register options
-	    '',         							// Title to be displayed on the administration page
-	    'wji_product_mapping_callback',  		// Callback used to render the description of the section
-	    'wji_plugin_product_mapping_options'	// Page on which to add this section of options
-	);
+        'product_settings_section',             // ID used to identify this section and with which to register options
+        '',                                     // Title to be displayed on the administration page
+        'wji_product_mapping_callback',         // Callback used to render the description of the section
+        'wji_plugin_product_mapping_options'    // Page on which to add this section of options
+    );
 }
 add_action( 'admin_init', 'wji_intialize_product_options' );
 
@@ -721,14 +721,123 @@ function wji_plugin_validate_general_options($input) {
 add_action( 'woocommerce_new_order', 'wji_new_order_created', 10, 2 );
 function wji_new_order_created( $order_id, $order ) {
     global $wpdb;
+    $api = new WJI_IntegrationAPI();
 
-    // Insert to db sync table with action je_create
+    $order_status = $order->get_status();
     $table_name = $wpdb->prefix . 'wji_order_sync_log';
-    $insert_new_order = $wpdb->insert($table_name, [
-        'wc_order_id' => $order_id,
-        'sync_action' => 'JE_CREATE',
-        'sync_status' => 'UNSYNCED'
-    ]);
+
+    // Check order status
+    if($order_status == 'pending') {
+
+        // Insert to db sync table with action je_create
+        $insert_new_order = $wpdb->insert($table_name, [
+            'wc_order_id' => $order_id,
+            'sync_action' => 'JE_CREATE',
+            'sync_status' => 'UNSYNCED'
+        ]);
+
+    } elseif ($order_status == 'processing') {
+
+        // Check if previous JE_CREATE sync exists
+        $where = 'where wc_order_id='.$order_id.' and sync_action="JE_CREATE" and sync_status="SYNCED"';
+        $get_results = $wpdb->get_row("select * from {$table_name} {$where}");
+
+        // If not, immediately get journal entry id so it doesn't conflicts with current business flow
+        if(empty($get_results)) {
+
+            // DIRECTLY API CALL JUST TO GET THE JOURNAL ENTRY ID
+
+            $get_options = get_option('wji_account_mapping_options');
+            $acc_receivable = $api->getJurnalAccountName( $get_options['acc_receivable'] );
+            $acc_tax = $api->getJurnalAccountName( $get_options['acc_tax'] );
+            $acc_sales = $api->getJurnalAccountName( $get_options['acc_sales'] );
+            $acc_stock_adjustments = $api->getJurnalAccountName( $get_options['acc_stock_adjustments'] );
+
+            // Ambil data order nya
+            $order_id = $order->get_id();
+            $order_created_date = $order->get_date_created()->format( 'Y-m-d' );
+            $order_billing_first_name = strtoupper($order->get_billing_first_name());
+            $order_billing_last_name = strtoupper($order->get_billing_last_name());
+            $order_billing_full_name = $order_billing_first_name.'-'.$order_billing_last_name;
+            $order_trans_no = $order_id . '-' . $order_billing_full_name;
+            $order_total = $order->get_total();
+
+            // Calculate tax
+            $general_options = get_option('wji_plugin_general_options');
+            if( !$general_options['include_tax'] ) {
+                $order_tax = $order->total_tax;
+                $order_total_after_tax = $order_total;
+            } else {
+                $order_tax = $order_total * 0.1;
+                $order_total_after_tax = $order_total - $order_tax;
+            }
+
+            // Sample format data untuk order dengan status pembayaran BELUM lunas, refer ke sample di akun Jurnal.ID
+            $data = array(
+                "journal_entry" => array(
+                    "transaction_date" => $order_created_date,
+                    "transaction_no" => $order_trans_no,
+                    "memo" => 'Order On Hold',
+                    "transaction_account_lines_attributes" => [
+                        [
+                            "account_name" => $acc_receivable,
+                            "debit" => $order_total,
+                        ],
+                        [
+                            "account_name" => $acc_tax,
+                            "credit" => $order_tax,
+                        ],
+                        [
+                            "account_name" => $acc_sales,
+                            "credit" => $order_total_after_tax,
+                        ]
+                    ],
+                    "tags" => [
+                        'WooCommerce Order ID: '.$order_id,
+                        $order_billing_full_name
+                    ]
+                )
+            );
+
+            // Make the API call
+            $postJournalEntry = $api->postJournalEntry($data);
+
+            // THEN INSERT THE REAL JE_UPDATE
+            if( isset($postJournalEntry->journal_entry) ) {
+                // Then, insert the update sync action
+                $jurnal_entry_id = $postJournalEntry->journal_entry->id;
+                $wpdb->insert($table_name, [
+                    'wc_order_id' => $order_id,
+                    'jurnal_entry_id' => $jurnal_entry_id,
+                    'sync_action' => 'JE_UPDATE',
+                    'sync_status' => 'UNSYNCED'
+                ]);
+
+                // 2. Create stock adjustments if enabled
+                $options = get_option('wji_plugin_general_options');
+                if($options['sync_stock']) {
+                    $wpdb->insert($table_name, [
+                        'wc_order_id' => $order_id,
+                        'sync_action' => 'SA_CREATE',
+                        'sync_status' => 'UNSYNCED'
+                    ]);
+                }
+            } else {
+                write_log('Cannot get Jurnal Entry ID');
+            }
+
+        } else {
+
+            // Insert the update sync action
+            $insert_new_order = $wpdb->insert($table_name, [
+                'wc_order_id' => $order_id,
+                'jurnal_entry_id' => $get_results->jurnal_entry_id,
+                'sync_action' => 'JE_UPDATE',
+                'sync_status' => 'UNSYNCED'
+            ]);
+
+        }
+    }
 }
 
 /**
@@ -792,10 +901,10 @@ function wji_update_order_processing( $order_id ) {
  * Add custom plugin cron job interval
  */
 function wji_cron_add_minute_interval( $schedules ) {
-	// Adds once every minute to the existing schedules.
+    // Adds once every minute to the existing schedules.
     $schedules['wji_everyminute'] = array(
-	    'interval' => 60,
-	    'display' => __( 'WooCommerce & Jurnal.ID Sync Every Minute' )
+        'interval' => 60,
+        'display' => __( 'WooCommerce & Jurnal.ID Sync Every Minute' )
     );
     return $schedules;
 }
@@ -826,7 +935,6 @@ function wji_sync_order_job() {
         $acc_stock_adjustments = $api->getJurnalAccountName( $get_options['acc_stock_adjustments'] );
 
         foreach ($tobesync_orders as $tobesync_order) {
-
             // Ambil data order nya
             $order = wc_get_order($tobesync_order->wc_order_id);
             $order_id = $order->get_id();
@@ -849,6 +957,7 @@ function wji_sync_order_job() {
 
             // Check ini action nya ngapain
             $sync_action = $tobesync_order->sync_action;
+
             if($sync_action == 'JE_CREATE') {
 
                 // Sample format data untuk order dengan status pembayaran BELUM lunas, refer ke sample di akun Jurnal.ID
@@ -903,14 +1012,13 @@ function wji_sync_order_job() {
                         $where
                     );
                 }
-
             } elseif ($sync_action == 'JE_UPDATE') {
 
                 // Get variables
                 $jurnal_entry_id = $tobesync_order->jurnal_entry_id;
                 $order_payment = 'acc_payment_'.$order->get_payment_method();
                 $acc_payment = $api->getJurnalAccountName( $get_options[$order_payment] );
-                
+
                 // Sample format data untuk order dengan status pembayaran SUDAH lunas, refer ke sample di akun Jurnal.ID
                 $data = array(
                     "journal_entry" => array(
@@ -961,7 +1069,6 @@ function wji_sync_order_job() {
                         $where
                     );
                 }
-
             } elseif ($sync_action == 'SA_CREATE') {
 
                 $get_options = get_option('wji_plugin_general_options');
@@ -973,7 +1080,7 @@ function wji_sync_order_job() {
                     // Sample format data untuk order dengan status pembayaran BELUM lunas, refer ke sample di akun Jurnal.ID
                     $data = array(
                         "stock_adjustment" => array(
-                            "stock_adjustment_type" => 'General',
+                            "stock_adjustment_type" => 'general',
                             "warehouse_id" => $warehouse_id,
                             "account_name" => $acc_stock_adjustments,
                             "date" => date("Y-m-d"),
@@ -983,16 +1090,20 @@ function wji_sync_order_job() {
                     );
                     
                     foreach ( $order->get_items() as $key => $item ) {
+                        
+                        // Get an instance of the WC_Product object (can be a product variation too)
+                        $product = $item->get_product();
+                        $product_id = $product->get_id();
+
                         // Get item mapping
-                        $charset    = $wpdb->get_charset_collate();
                         $table_name = $wpdb->prefix . 'wji_product_mapping';
-                        $where = 'where wc_item_id='.$item->get_product_id();
+                        $where = 'where wc_item_id='.$product_id;
                         $product = $wpdb->get_row("select * from {$table_name} {$where}");
 
                         if( !empty($product) ) {
                             $data['stock_adjustment']['lines_attributes'][] = array(
                                 "product_name" => $api->getJurnalProductName($product->jurnal_item_id),
-                                "difference" => $item->get_quantity(),
+                                "difference" => -$item->get_quantity(),
                                 "use_custom_average_price" => false
                             );
                         }
@@ -1000,12 +1111,12 @@ function wji_sync_order_job() {
 
                     // Make the API call
                     $postStockAdjustments = $api->postStockAdjustments($data);
-
+                    
                     // Update order sync status in db
                     if( isset($postStockAdjustments->stock_adjustment) ) {
                         $where = [ 'id' => $tobesync_order->id ];
                         $stock_adj_id = $postStockAdjustments->stock_adjustment->id;
-                        $table_name = 'wp_wji_order_sync_log';
+                        $table_name = $wpdb->prefix . 'wji_order_sync_log';
                         $wpdb->update($table_name, [
                                 'stock_adj_id' => $stock_adj_id,
                                 'sync_data' => json_encode($data),
@@ -1016,12 +1127,12 @@ function wji_sync_order_job() {
                         );
                     } else {
                         $where = [ 'id' => $tobesync_order->id ];
-                        $table_name = 'wp_wji_order_sync_log';
+                        $table_name = $wpdb->prefix . 'wji_order_sync_log';
                         if($postStockAdjustments->errors) {
                             $message = $postStockAdjustments->errors;
                         }
                         if(@$postStockAdjustments->error_full_messages) {
-                            $message = $postStockAdjustments->error_full_messages;
+                            $message = json_encode($postStockAdjustments->error_full_messages);
                         }
                         $wpdb->update($table_name, [
                                 'sync_data' => json_encode($data),
@@ -1031,6 +1142,8 @@ function wji_sync_order_job() {
                             $where
                         );
                     } // end if postStockAdjustments
+                } else {
+                    write_log('Pengaturan Warehouse belum di set.');
                 } // end if warehouse id 
             } // end if SA_CREATE
         } // end if foreach tobesync_orders
@@ -1067,10 +1180,11 @@ function wji_enqueue_scripts(){
 if (!function_exists('write_log')) {
     function write_log ( $log )  {
         if ( true === WP_DEBUG ) {
+            $pluginlog = plugin_dir_path(__FILE__).'debug.log';
             if ( is_array( $log ) || is_object( $log ) ) {
-                error_log( print_r( $log, true ) );
+                error_log( print_r( $log, true ).PHP_EOL, 3, $pluginlog );
             } else {
-                error_log( $log );
+                error_log( $log.PHP_EOL, 3, $pluginlog );
             }
         }
     }
