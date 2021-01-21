@@ -12,7 +12,6 @@ class WJI_TableList extends WP_List_Table {
 	private $datas;
 	private $columns;
 	private $perPage = 10;
-	private $serial;
 	private $totalItem;
 	private $topTableNav;
 
@@ -63,12 +62,8 @@ class WJI_TableList extends WP_List_Table {
 		return esc_html($item->$column_name);
 	}
 
-	public function column_serialid() {
-		if(is_null($this->serial)) {
-			$this->serial = $this->perPage * ($this->get_pagenum() - 1);
-		}
-		$this->serial++;
-		return $this->serial;
+	public function column_id($item) {
+		return $item->id;
 	}
 
 	public function column_wcproductname($item) {
@@ -123,19 +118,19 @@ class WJI_TableList extends WP_List_Table {
 	public function column_sync_action($item) {
 		switch($item->sync_action) {
 			case 'JE_CREATE':
-				$status = 'Create Journal Entry';
+				$status = 'Create journal entry';
 				break;
 			case 'JE_UPDATE':
-				$status = 'Update Journal Entry';
+				$status = 'Update journal entry';
 				break;
 			case 'JE_DELETE':
-				$status = 'Delete Journal Entry';
+				$status = 'Delete journal entry';
 				break;
 			case 'SA_CREATE':
-				$status = 'Create Stock Adjustment';
+				$status = 'Create stock adjustment';
 				break;
 			case 'SA_DELETE':
-				$status = 'Delete Stock Adjustment';
+				$status = 'Delete stock adjustment';
 				break;
 			default:
 				$status = '';
@@ -148,16 +143,16 @@ class WJI_TableList extends WP_List_Table {
 		$label = '';
 		switch($item->sync_status) {
 			case 'UNSYNCED':
-				$status = 'Dalam Antrian';
+				$status = 'Dalam antrian';
 				$label = 'primary';
 				break;
 			case 'SYNCED':
-				$status = 'Berhasil Tersinkron';
+				$status = 'Berhasil tersinkron';
 				$label = 'success';
 				break;
 			case 'ERROR':
 			default:
-				$status = 'Gagal Tersinkron';
+				$status = 'Gagal tersinkron';
 				$label = 'danger';
 		}
 		return '<span class="bc-label '.$label.'">'.$status.'</span>';
@@ -172,35 +167,35 @@ class WJI_TableList extends WP_List_Table {
 					if($item->sync_status == 'SYNCED') {
 						$je_id = $item->jurnal_entry_id;
 						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank">'.$je_id.'</a>';
-						$message = 'Order On Hold. Jurnal Entry berhasil dibuat ID '.$link;
+						$message = 'Order on hold. Jurnal entry berhasil dibuat ID '.$link;
 						break;
 					}
 				case 'JE_UPDATE':
 					if($item->sync_status == 'SYNCED') {
 						$je_id = $item->jurnal_entry_id;
 						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank">'.$je_id.'</a>';
-						$message = 'Order Processing. Jurnal Entry berhasil di update ID '.$link;
+						$message = 'Order processing. Jurnal entry berhasil di update ID '.$link;
 						break;
 					}
 				case 'JE_DELETE':
 					if($item->sync_status == 'SYNCED') {
-						$message = 'Order Cancelled. Journal Entry berhasil dihapus';
+						$message = 'Order cancelled. Journal entry berhasil dihapus';
 						break;
 					}
 				case 'SA_CREATE':
 					if($item->sync_status == 'SYNCED') {
 						$sa_id = $item->stock_adj_id;
 						$link = '<a href="https://my.jurnal.id/stock_adjustments/'.$sa_id.'" target="_blank">'.$sa_id.'</a>';
-						$message = 'Order Processing. Stock Adjustment berhasil dibuat ID '.$link;
+						$message = 'Order processing. Stock adjustment berhasil dibuat ID '.$link;
 						break;
 					}
 				case 'SA_DELETE':
 					if($item->sync_status == 'SYNCED') {
-						$message = 'Order Cancelled. Stock Adjustment berhasil dihapus';
+						$message = 'Order cancelled. Stock adjustment berhasil dihapus';
 						break;
 					}
 				default:
-					$status = 'Gagal Tersinkron';
+					$status = 'Gagal tersinkron';
 					$link = 'danger';
 			}
 			return $message;

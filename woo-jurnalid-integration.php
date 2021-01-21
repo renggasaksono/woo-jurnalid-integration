@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           1.9.0
+ * Version:           1.9.1
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -50,7 +50,7 @@ function wji_on_activation() {
 
     // Schedule cron event
     if( !wp_next_scheduled( 'wji_cronjob_event' ) ) {
-       wp_schedule_event( time(), 'wji_everyminute', 'wji_cronjob_event' );  
+       wp_schedule_event( time(), 'woojurnal_sync_interval', 'wji_cronjob_event' );  
     }
 }
 
@@ -133,7 +133,7 @@ function wji_add_help_tab () {
                 <li>Pembayaran Masuk =  Order status Processing. Update <b>Jurnal Entry</b> yang dibuat di Poin 1 sesuai Account Mapping.</li>
                 <li>Order = Processing. Buat <b>Stock Adjustment</b> di Jurnal.ID sesuai Product Mapping yang ada di Order.</li>
                 <li>Jika ada Product yang belum di mapping ketika sync berjalan, maka <b>Stock Adjusment</b> akan dibuat dengan Product yang sudah di mapping saja.</li>
-                <li>Proses sinkronisasi ke Jurnal.ID berjalan secara otomatis setiap <b>1 menit</b>.</li>
+                <li>Proses sinkronisasi ke Jurnal.ID berjalan secara otomatis setiap <b>5 menit</b>.</li>
                 <li>Histori sinkronisasi dan statusnya bisa dilihat di <b>Sync History</b>.</li>
             </ol>
         ',
@@ -439,13 +439,13 @@ function wji_product_mapping_callback() {
     $offset = $tablelist->getPerpage() * ($tablelist->get_pagenum() - 1);
     $where = '';
 
-    $products = $wpdb->get_results("select wjpm.* from {$table_name} wjpm join {$table_post} p on wjpm.wc_item_id=p.id {$where} order by post_name limit {$tablelist->getPerpage()} offset {$offset}");
+    $products = $wpdb->get_results("select wjpm.* from {$table_name} wjpm join {$table_post} p on wjpm.wc_item_id=p.id {$where} order by id limit {$tablelist->getPerpage()} offset {$offset}");
     $count = $wpdb->get_var("select count(id) from {$table_name} {$where}");
 
     $tablelist->setTotalItem($count);
     $tablelist->setDatas($products);
     $tablelist->setColumns([
-        'serialid' => '#',
+        'id' => '#',
         'wcproductname' => 'Produk pada Woocommerce (SKU - Nama Produk)',
         'jurnal_item_code' => 'Produk pada Jurnal.ID (SKU - Nama Produk)'
     ]);
@@ -467,9 +467,9 @@ function wji_order_sync_callback() {
     $tablelist->setTotalItem($count);
     $tablelist->setDatas($products);
     $tablelist->setColumns([
-        'serialid'          => '#',
+        'id'                => '#',
         'wc_order_id'       => 'Order ID',
-        'sync_action'       => 'Action',
+        'sync_action'       => 'Task',
         'sync_status'       => 'Status',
         'sync_note'         => 'Pesan',
         'sync_at'           => 'Tanggal'
@@ -747,7 +747,6 @@ function wji_new_order_created( $order_id, $order ) {
         if(empty($get_results)) {
 
             // DIRECTLY API CALL JUST TO GET THE JOURNAL ENTRY ID
-
             $get_options = get_option('wji_account_mapping_options');
             $acc_receivable = $api->getJurnalAccountName( $get_options['acc_receivable'] );
             $acc_tax = $api->getJurnalAccountName( $get_options['acc_tax'] );
@@ -778,7 +777,7 @@ function wji_new_order_created( $order_id, $order ) {
                 "journal_entry" => array(
                     "transaction_date" => $order_created_date,
                     "transaction_no" => $order_trans_no,
-                    "memo" => 'Order On Hold',
+                    "memo" => 'WooCommerce Order ID: '.$order_id,
                     "transaction_account_lines_attributes" => [
                         [
                             "account_name" => $acc_receivable,
@@ -794,7 +793,7 @@ function wji_new_order_created( $order_id, $order ) {
                         ]
                     ],
                     "tags" => [
-                        'WooCommerce Order ID: '.$order_id,
+                        'WooCommerce',
                         $order_billing_full_name
                     ]
                 )
@@ -805,6 +804,7 @@ function wji_new_order_created( $order_id, $order ) {
 
             // THEN INSERT THE REAL JE_UPDATE
             if( isset($postJournalEntry->journal_entry) ) {
+
                 // Then, insert the update sync action
                 $jurnal_entry_id = $postJournalEntry->journal_entry->id;
                 $wpdb->insert($table_name, [
@@ -1039,9 +1039,9 @@ function wji_delete_product( $post_id ) {
  */
 function wji_cron_add_minute_interval( $schedules ) {
     // Adds once every minute to the existing schedules.
-    $schedules['wji_everyminute'] = array(
-        'interval' => 60,
-        'display' => __( 'WooCommerce & Jurnal.ID Sync Every Minute' )
+    $schedules['woojurnal_sync_interval'] = array(
+        'interval' => 300,
+        'display' => __( 'WooCommerce & Jurnal.ID Sync Interval' )
     );
     return $schedules;
 }
@@ -1065,6 +1065,12 @@ function wji_sync_order_job() {
     // Proses data yang belum sync
     if($count > 0) {
 
+        // Activity tracker
+        foreach ($tobesync_orders as $tobesync_order) {
+            $orders_sync_list[] = $tobesync_order->wc_order_id;
+        }
+        write_log( date("d-m-Y H:i:s").' Order sync list '.print_r($orders_sync_list, true) );
+
         // Get account options
         $get_options = get_option('wji_account_mapping_options');
         $acc_receivable = $api->getJurnalAccountName( $get_options['acc_receivable'] );
@@ -1073,6 +1079,9 @@ function wji_sync_order_job() {
         $acc_stock_adjustments = $api->getJurnalAccountName( $get_options['acc_stock_adjustments'] );
 
         foreach ($tobesync_orders as $tobesync_order) {
+
+            // Activity tracker
+            write_log( 'Run order ID '.$tobesync_order->wc_order_id );
 
             // Ambil data order nya
             $order = wc_get_order($tobesync_order->wc_order_id);
@@ -1201,10 +1210,11 @@ function wji_sync_order_job() {
                     );
                 } else {
                     $where = [ 'id' => $tobesync_order->id ];
+                    @$message = $postJournalEntry->error_full_messages;
                     $wpdb->update($table_name, [
                             'sync_status' => 'ERROR',
                             'sync_data' => json_encode($data),
-                            'sync_note' => $patchJournalEntry->errors
+                            'sync_note' => $message
                         ],
                         $where
                     );
@@ -1263,14 +1273,19 @@ function wji_sync_order_job() {
                         "account_name" => $acc_stock_adjustments,
                         "date" => date("Y-m-d"),
                         "memo" => 'WooCommerce Order ID#'.$order_id,
-                        "maintain_actual" => false
+                        "maintain_actual" => false,
+                        "lines_attributes" => NULL
                     )
                 );
-                    
+
                 foreach ( $order->get_items() as $key => $item ) {
                     
                     // Get an instance of the WC_Product object (can be a product variation too)
                     $product = $item->get_product();
+                    if(!$product) {
+                        write_log('Product '.$key.' does not exist');
+                        continue;
+                    }
                     $product_id = $product->get_id();
 
                     // Get item mapping
@@ -1285,13 +1300,12 @@ function wji_sync_order_job() {
                             "use_custom_average_price" => false
                         );
                     } else {
-                        write_log('Order ID: '.$tobesync_order->wc_order_id.' skip unmap Item ID: '.$product_id);
-                        continue; // Skip unmap item, continue with next
+                        write_log('Skip unmap Product ID '.$product_id);
                     }
                 }
 
                 // Kalau ada data product nya
-                if( count( $data['stock_adjustment']['lines_attributes'] ) > 0 ) {
+                if( isset( $data['stock_adjustment']['lines_attributes'] ) ) {
 
                     // Make the API call
                     $postStockAdjustments = $api->postStockAdjustments($data);
@@ -1332,7 +1346,7 @@ function wji_sync_order_job() {
                     $table_name = $wpdb->prefix . 'wji_order_sync_log';
                     $wpdb->update($table_name, [
                             'sync_status' => 'ERROR',
-                            'sync_note' => 'Data produk tidak ada'
+                            'sync_note' => 'Data product mapping tidak ada'
                         ],
                         $where
                     );
