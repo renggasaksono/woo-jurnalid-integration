@@ -44,6 +44,21 @@ class WJI_TableList extends WP_List_Table {
 		return $this->columns;
 	}
 
+	public function generate() {
+		$columns = $this->columns;
+		$hidden = [];
+		$sortable = [];
+		$this->_column_headers = array($columns, $hidden, $sortable);
+
+		$this->set_pagination_args([
+		    'total_items' => $this->totalItem,
+		    'per_page'    => $this->perPage
+		]);
+
+		$this->items = $this->datas;
+		$this->display();
+	}
+
 	public function column_default( $item, $column_name ) {
 		return esc_html($item->$column_name);
 	}
@@ -76,7 +91,8 @@ class WJI_TableList extends WP_List_Table {
 		$html .= '<a class="bc-editable-cancel" href="#"><span class="dashicons dashicons-no-alt"></span></a>';
 		$html .= '<select name="wcbc_select2_item" class="bc-editable-select2" style="width:50%;max-width:20em;">';
 		$html .= '<option></option>';
-				if($jurnal_products = $this->getJournalProducts()) {
+				$api = new WJI_IntegrationAPI;
+				if($jurnal_products = $api->getJournalProducts()) {
 			 		foreach ($jurnal_products as $product) {
 			 				$html .= '<option value="' . esc_html($product['id']) . '">' . esc_html($product['text']) . '</option>';
 			 		}
@@ -111,6 +127,9 @@ class WJI_TableList extends WP_List_Table {
 				break;
 			case 'JE_UPDATE':
 				$status = 'Update Journal Entry';
+				break;
+			case 'JE_DELETE':
+				$status = 'Delete Journal Entry';
 				break;
 			case 'SA_CREATE':
 				$status = 'Create Stock Adjustment';
@@ -160,9 +179,10 @@ class WJI_TableList extends WP_List_Table {
 						$message = 'Order Processing. Jurnal Entry berhasil di update ID '.$link;
 						break;
 					}
-				case 'JE_CANCEL':
-					$status = 'Berhasil Tersinkron';
-					$link = 'success';
+				case 'JE_DELETE':
+					if($item->sync_status == 'SYNCED') {
+						$message = 'Order Cancelled. Journal Entry berhasil dihapus';
+					}
 					break;
 				case 'SA_CREATE':
 					if($item->sync_status == 'SYNCED') {
@@ -182,71 +202,11 @@ class WJI_TableList extends WP_List_Table {
 		}
 	}
 
-	public function column_total($item) {
-		return esc_html(number_format($item->total));
-	}
-
 	public function column_sync_at($item) {
 		if($item->sync_at != '0000-00-00 00:00:00') {
 			return esc_html($item->sync_at);
 		}
 		return '';
-	}
-
-	public function column_trxno_labelprocess($item) {
-		$colorClass = [
-			'ORDER' => 'primary',
-			'CANCEL' => 'danger',
-		];
-		return $item->trxno.' <span class="bc-label '.$colorClass[$item->process_type].'" style="font-size:10px">'.$item->process_type.'</span>';
-	}
-
-	public function column_action_process_sync($item) {
-		if($item->sync_status == 'UNSYNCED' OR $item->sync_status == 'ERROR') {
-			$ajaxAction = [
-				'ORDER' => 'wcbc_upload_order',
-				'CANCEL' => 'wcbc_close_order',
-			];
-			return '
-				<a class="button" onclick="return false;" data-so="'.esc_html($item->id).'" ajax-action="'.esc_html($ajaxAction[$item->process_type]).'">
-					<span class="dashicons dashicons-upload"></span>
-				</a>
-				<span class="bc-upload-success hidden" style="color:green">&ensp;Tersinkron!</span>
-			';
-		}
-	}
-
-	public function generate() {
-		$columns = $this->columns;
-		$hidden = [];
-		$sortable = [];
-		$this->_column_headers = array($columns, $hidden, $sortable);
-
-		$this->set_pagination_args([
-		    'total_items' => $this->totalItem,
-		    'per_page'    => $this->perPage
-		]);
-
-		$this->items = $this->datas;
-		$this->display();
-	}	
-
-	public function getJournalProducts() {
-		// Check cached data exists
-		if( false === ( $jurnal_products = get_transient( 'wji_cached_journal_products' ) ) ) {
-			$api = new WJI_IntegrationAPI();
-	 		$jurnal_products = $api->getAllJurnalItems();
-
-	 		if(is_array($jurnal_products)) {
-		 		// Stores data in cache for future uses
-		 		set_transient( 'wji_cached_journal_products', $jurnal_products, 1 * DAY_IN_SECONDS );
-		 		return $jurnal_products;
-		 	} else {
-		 		return false;
-		 	}
- 		} else {
- 			return $jurnal_products;
- 		}
 	}
 }
 ?>

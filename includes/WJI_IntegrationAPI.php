@@ -56,6 +56,18 @@ class WJI_IntegrationAPI {
 		]);	
 	}
 
+	private function delete() {
+		return wp_remote_request( $this->getUrl(), [
+			'headers' => [
+				'Content-Type' => 'application/json; charset=utf-8', 
+				'apikey' => $this->apikey
+			],
+			'method' => 'DELETE',
+			'timeout' => 75,			    
+			'body' => $this->body
+		]);	
+	}
+
 	public function getAllJurnalWarehouses() {
 
 		$this->endpoint = 'warehouses';
@@ -142,26 +154,6 @@ class WJI_IntegrationAPI {
 		}
 	}
 
-	public function getListWhAjax($param) {
-		$this->endpoint = 'v1/select2data/wh';
-		$this->body = ['q' => $param];
-		$response = $this->get();
-
-		if(is_array($response)) {
-			$data = json_decode($response['body']);
-
-			if($data->status) {
-				return $data->data;
-			}
-			else {
-				return false;
-			}
-		}
-		else {
-			return $response;
-		}
-	}
-
 	public function postJournalEntry($data) {
 		$this->endpoint = 'journal_entries';
 		$this->body = json_encode($data);
@@ -174,6 +166,14 @@ class WJI_IntegrationAPI {
 		$this->endpoint = 'journal_entries/'.$journal_entry_id;
 		$this->body = json_encode($data);
 		$response = $this->patch();
+		$data = json_decode($response['body']); // Ini outputnya jd object
+		return $data;
+	}
+
+	public function deleteJournalEntry( $journal_entry_id ) {
+		$this->endpoint = 'journal_entries/'.$journal_entry_id;
+		$this->body = '';
+		$response = $this->delete();
 		$data = json_decode($response['body']); // Ini outputnya jd object
 		return $data;
 	}
@@ -255,6 +255,23 @@ class WJI_IntegrationAPI {
 		else {
 			return $response;
 		}
+	}
+
+	public function getJournalProducts() {
+		// Check cached data exists
+		if( false === ( $jurnal_products = get_transient( 'wji_cached_journal_products' ) ) ) {
+			$jurnal_products = $this->getAllJurnalItems();
+
+	 		if(is_array($jurnal_products)) {
+		 		// Stores data in cache for future uses
+		 		set_transient( 'wji_cached_journal_products', $jurnal_products, 1 * DAY_IN_SECONDS );
+		 		return $jurnal_products;
+		 	} else {
+		 		return false;
+		 	}
+ 		} else {
+ 			return $jurnal_products;
+ 		}
 	}
 }
 ?>

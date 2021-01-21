@@ -61,18 +61,5 @@ class WJI_AjaxCallback {
 
 	 	echo json_encode(false);wp_die();
 	}
-
-	static function wcbc_get_wh_ajax_callback(){
-	 	$api = new BCXWC_IntegrationAPI();
-
-	 	$data = $api->getListWhAjax(BCXWC_Helper::sanitize($_GET['q']));
-
-	 	if($data) {
-	 		echo json_encode($data);wp_die();
-	 	}
-	 	else {
-	 		echo json_encode([]);wp_die();
-	 	}
-	}
 }
 ?>

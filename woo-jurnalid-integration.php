@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           1.7.1
+ * Version:           1.8.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -893,6 +893,47 @@ function wji_update_order_processing( $order_id ) {
     }
 }
 
+/**
+ * Fungsi ini dipanggil setelah order status berubah menjadi Cancelled
+ *
+*/
+add_action( 'woocommerce_order_status_cancelled', 'wji_update_order_cancelled', 10, 1 );
+function wji_update_order_cancelled( $order_id ) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'wji_order_sync_log';
+
+    // Check apakah sudah pernah di cancel sebelumnya
+    $where = 'WHERE wc_order_id='.$order_id.' AND sync_action="JE_DELETE" AND sync_status="SYNCED"';
+    $updated_orders = $wpdb->get_results("SELECT * FROM {$table_name} {$where} ORDER BY id");
+    $count_updated_orders = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} {$where}");
+    
+    // If data exists
+    if($count_updated_orders > 0) {
+        // Jurnal Entry sudah pernah di sync update sebelumnya
+        write_log('Jurnal entry sudah pernah di delete sebelumnya Order ID: '.$order_id);
+    } else {
+
+        // Get journal_entry id
+        $where = 'WHERE wc_order_id='.$order_id.' AND sync_action="JE_CREATE" AND sync_status="SYNCED"';
+        $prev_synced_order = $wpdb->get_row("SELECT * FROM {$table_name} {$where} ORDER BY id");
+        
+        // If data exists
+        if( empty($prev_synced_order) ) {
+            // Tdk ada data yang ditemukan
+            write_log('Tidak ada data Journal Entry sebelumnya untuk Order ID: '.$order_id);
+        } else {
+
+            // Add delete journal entry sync record
+            $wpdb->insert($table_name, [
+                'wc_order_id' => $order_id,
+                'jurnal_entry_id' => $prev_synced_order->jurnal_entry_id,
+                'sync_action' => 'JE_DELETE',
+                'sync_status' => 'UNSYNCED'
+            ]);
+        }
+    }
+}
+
 /* ------------------------------------------------------------------------ *
  * WP Cron functions
  * ------------------------------------------------------------------------ */
@@ -921,7 +962,7 @@ function wji_sync_order_job() {
     // Ambil data dr db table
     $table_name = $wpdb->prefix . 'wji_order_sync_log';
     $where = 'WHERE sync_status = "UNSYNCED"';
-    $limit = 5; // Max numbers per order to process in one time
+    $limit = 10; // Max numbers per order to process in one time
     $tobesync_orders = $wpdb->get_results("SELECT * FROM {$table_name} {$where} ORDER BY id ASC LIMIT {$limit}");
     $count = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} {$where}");
 
@@ -1072,6 +1113,33 @@ function wji_sync_order_job() {
                         $where
                     );
                 }
+            } elseif ($sync_action == 'JE_DELETE') {
+
+                // Get variables
+                $jurnal_entry_id = $tobesync_order->jurnal_entry_id;
+
+                // Make the API call
+                $deleteEntryResponse = $api->deleteJournalEntry($jurnal_entry_id);
+                
+                // Update sync status in db
+                if( !isset($deleteEntryResponse->errors) ) {
+                    $where = [ 'id' => $tobesync_order->id ];
+                    $wpdb->update($table_name, [
+                            'sync_status' => 'SYNCED',
+                            'sync_at' => date("Y-m-d H:i:s")
+                        ],
+                        $where
+                    );
+                } else {
+                    $where = [ 'id' => $tobesync_order->id ];
+                    $wpdb->update($table_name, [
+                            'sync_status' => 'ERROR',
+                            'sync_note' => $deleteEntryResponse->errors
+                        ],
+                        $where
+                    );
+                }
+
             } elseif ($sync_action == 'SA_CREATE') {
 
                 $get_options = get_option('wji_plugin_general_options');
