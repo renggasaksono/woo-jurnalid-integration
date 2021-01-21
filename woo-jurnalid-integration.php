@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           1.8.0
+ * Version:           1.9.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -129,11 +129,12 @@ function wji_add_help_tab () {
         'title' => __('Process Flow'),
         'content'   => '
             <ol>
-                <li>Buat <b>Jurnal Entry</b> di Jurnal.ID secara otomatis sesuai Account Mapping ketika ada Order WC via checkout web, Order = On Hold.</li>
-                <li>Update <b>Jurnal Entry</b> yang dibuat di Poin 1 ketika ada pembayaran masuk dan status Order = Processing.</li>
-                <li>Buat <b>Stock Adjustments</b> di Jurnal.ID sesuai produk yang ada di Order sesuai Product Mapping ketika status Order = Processing.</li>
+                <li>Belum ada Pembayaran = Order status On Hold. Buat <b>Jurnal Entry</b> di Jurnal.ID sesuai Account Mapping.</li>
+                <li>Pembayaran Masuk =  Order status Processing. Update <b>Jurnal Entry</b> yang dibuat di Poin 1 sesuai Account Mapping.</li>
+                <li>Order = Processing. Buat <b>Stock Adjustment</b> di Jurnal.ID sesuai Product Mapping yang ada di Order.</li>
+                <li>Jika ada Product yang belum di mapping ketika sync berjalan, maka <b>Stock Adjusment</b> akan dibuat dengan Product yang sudah di mapping saja.</li>
                 <li>Proses sinkronisasi ke Jurnal.ID berjalan secara otomatis setiap <b>1 menit</b>.</li>
-                <li>History sinkronisasi yang dilakukan dan statusnya bisa dilihat di <b>Sync History</b>.</li>
+                <li>Histori sinkronisasi dan statusnya bisa dilihat di <b>Sync History</b>.</li>
             </ol>
         ',
     ) );
@@ -917,7 +918,6 @@ function wji_update_order_cancelled( $order_id ) {
         $where = 'WHERE wc_order_id='.$order_id.' AND sync_action="JE_CREATE" AND sync_status="SYNCED"';
         $prev_synced_order = $wpdb->get_row("SELECT * FROM {$table_name} {$where} ORDER BY id");
         
-        // If data exists
         if( empty($prev_synced_order) ) {
             // Tdk ada data yang ditemukan
             write_log('Tidak ada data Journal Entry sebelumnya untuk Order ID: '.$order_id);
@@ -930,8 +930,104 @@ function wji_update_order_cancelled( $order_id ) {
                 'sync_action' => 'JE_DELETE',
                 'sync_status' => 'UNSYNCED'
             ]);
+
+            // Check apakah ada data stock adjustment
+            $where = 'WHERE wc_order_id='.$order_id.' AND sync_action="SA_CREATE" AND sync_status="SYNCED"';
+            $prev_synced_stock = $wpdb->get_row("SELECT * FROM {$table_name} {$where} ORDER BY id");
+
+            // If data exists
+            if( !empty($prev_synced_stock) ) {
+
+                // Add delete stock adjusment sync record
+                $wpdb->insert($table_name, [
+                    'wc_order_id' => $order_id,
+                    'stock_adj_id' => $prev_synced_stock->stock_adj_id,
+                    'sync_action' => 'SA_DELETE',
+                    'sync_status' => 'UNSYNCED'
+                ]);
+            }
         }
     }
+}
+
+/**
+ * Fungsi ini dipanggil ketika ada product yang di modify
+ *
+*/
+add_action( 'save_post_product', 'wji_check_new_product', 10, 3 );
+function wji_check_new_product( $post_id, $post, $update ){
+    global $wpdb;
+
+    //WC_Product object
+    $product = wc_get_product( $post_id );
+    if( !$product ) {
+        return;
+    }
+
+    // Insert new product
+    $table_name = $wpdb->prefix . 'wji_product_mapping';
+    $id = $product->get_id();
+    $data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$id}");
+    if(count($data) < 1) {
+        $wpdb->insert($table_name, ['wc_item_id' => $id, 'jurnal_item_id' => null]);
+    }
+
+    // Check for product variations
+    if ( $product->is_type( "variable" ) ) {
+        $childrens = $product->get_children();
+        if(count($childrens) > 0) {
+            foreach ( $childrens as $child_id ) {
+                $variation = wc_get_product( $child_id ); 
+                if ( ! $variation || ! $variation->exists() ) {
+                    continue;
+                }
+                $data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$child_id}");
+                if(count($data) < 1) {
+                    $wpdb->insert($table_name, ['wc_item_id' => $child_id, 'jurnal_item_id' => null]);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Fungsi ini dipanggil ketika ada product yang di hapus
+ *
+*/
+add_action( 'before_delete_post', 'wji_delete_product', 10, 1 );
+function wji_delete_product( $post_id ) {
+    global $wpdb;
+
+    if ( get_post_type( $post_id ) != 'product' ) {
+        return;
+    }
+
+    // Delete product
+    $table_name = $wpdb->prefix . 'wji_product_mapping';
+    $product = wc_get_product($post_id);
+    $id = $product->get_id();
+    $data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$id}");
+    if(count($data) < 1) {
+        $wpdb->delete($table_name, ['wc_item_id' => $id]);
+    }
+
+    // Check for product variations
+    if ( $product->is_type( "variable" ) ) {
+        $childrens = $product->get_children();
+        if(count($childrens) > 0) {
+            foreach ( $childrens as $child_id ) {
+                $variation = wc_get_product( $child_id ); 
+                if ( ! $variation || ! $variation->exists() ) {
+                    continue;
+                }
+                $data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$child_id}");
+                if(count($data) < 1) {
+                    $wpdb->delete($table_name, ['wc_item_id' => $child_id]);
+                }
+            }
+        }
+    }
+
 }
 
 /* ------------------------------------------------------------------------ *
@@ -1189,17 +1285,8 @@ function wji_sync_order_job() {
                             "use_custom_average_price" => false
                         );
                     } else {
-                        // Return error immediately
-                        $where = [ 'id' => $tobesync_order->id ];
-                        $table_name = $wpdb->prefix . 'wji_order_sync_log';
-                        $wpdb->update($table_name, [
-                                'sync_data' => json_encode($data),
-                                'sync_status' => 'ERROR',
-                                'sync_note' => 'Data Product Mapping tidak ditemukan untuk Product ID: '.$product_id
-                            ],
-                            $where
-                        );
-                        continue 2; // Continue with next unsynced order
+                        write_log('Order ID: '.$tobesync_order->wc_order_id.' skip unmap Item ID: '.$product_id);
+                        continue; // Skip unmap item, continue with next
                     }
                 }
 
@@ -1250,7 +1337,33 @@ function wji_sync_order_job() {
                         $where
                     );
                 }
-            } // end if SA_CREATE
+            } elseif ($sync_action == 'SA_DELETE') {
+
+                // Get variables
+                $stock_adj_id = $tobesync_order->stock_adj_id;
+
+                // Make the API call
+                $deleteEntryResponse = $api->deleteStockAdjustments($stock_adj_id);
+                
+                // Update sync status in db
+                if( !isset($deleteEntryResponse->errors) ) {
+                    $where = [ 'id' => $tobesync_order->id ];
+                    $wpdb->update($table_name, [
+                            'sync_status' => 'SYNCED',
+                            'sync_at' => date("Y-m-d H:i:s")
+                        ],
+                        $where
+                    );
+                } else {
+                    $where = [ 'id' => $tobesync_order->id ];
+                    $wpdb->update($table_name, [
+                            'sync_status' => 'ERROR',
+                            'sync_note' => $deleteEntryResponse->errors
+                        ],
+                        $where
+                    );
+                }
+            } // end all sync_action conditions
         } // end if foreach tobesync_orders
     } // end if count
 }

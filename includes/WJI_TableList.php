@@ -134,6 +134,9 @@ class WJI_TableList extends WP_List_Table {
 			case 'SA_CREATE':
 				$status = 'Create Stock Adjustment';
 				break;
+			case 'SA_DELETE':
+				$status = 'Delete Stock Adjustment';
+				break;
 			default:
 				$status = '';
 		}
@@ -182,8 +185,8 @@ class WJI_TableList extends WP_List_Table {
 				case 'JE_DELETE':
 					if($item->sync_status == 'SYNCED') {
 						$message = 'Order Cancelled. Journal Entry berhasil dihapus';
+						break;
 					}
-					break;
 				case 'SA_CREATE':
 					if($item->sync_status == 'SYNCED') {
 						$sa_id = $item->stock_adj_id;
@@ -191,7 +194,11 @@ class WJI_TableList extends WP_List_Table {
 						$message = 'Order Processing. Stock Adjustment berhasil dibuat ID '.$link;
 						break;
 					}
-				case 'SA_CANCEL':
+				case 'SA_DELETE':
+					if($item->sync_status == 'SYNCED') {
+						$message = 'Order Cancelled. Stock Adjustment berhasil dihapus';
+						break;
+					}
 				default:
 					$status = 'Gagal Tersinkron';
 					$link = 'danger';

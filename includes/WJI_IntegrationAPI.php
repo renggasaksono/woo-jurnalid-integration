@@ -186,6 +186,14 @@ class WJI_IntegrationAPI {
 		return $data;
 	}
 
+	public function deleteStockAdjustments( $stock_adj_id ) {
+		$this->endpoint = 'stock_adjustments/'.$stock_adj_id;
+		$this->body = '';
+		$response = $this->delete();
+		$data = json_decode($response['body']); // Ini outputnya jd object
+		return $data;
+	}
+
 	public function getJurnalProductName( $product_id ) {
 
 		$this->endpoint = 'products/'.$product_id;
