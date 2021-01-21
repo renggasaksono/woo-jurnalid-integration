@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           1.7.0
+ * Version:           1.7.1
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -739,8 +739,8 @@ function wji_new_order_created( $order_id, $order ) {
     } elseif ($order_status == 'processing') {
 
         // Check if previous JE_CREATE sync exists
-        $where = 'where wc_order_id='.$order_id.' and sync_action="JE_CREATE" and sync_status="SYNCED"';
-        $get_results = $wpdb->get_row("select * from {$table_name} {$where}");
+        $where = 'WHERE wc_order_id='.$order_id.' AND sync_action="JE_CREATE" AND sync_status="SYNCED"';
+        $get_results = $wpdb->get_row("SELECT * FROM {$table_name} {$where}");
 
         // If not, immediately get journal entry id so it doesn't conflicts with current business flow
         if(empty($get_results)) {
@@ -851,9 +851,9 @@ function wji_update_order_processing( $order_id ) {
 
     // Check for unsync orders haven't been updated
     $table_name = $wpdb->prefix . 'wji_order_sync_log';
-    $where = 'where wc_order_id='.$order_id.' and sync_action="JE_UPDATE" and sync_status="SYNCED"';
-    $updated_orders = $wpdb->get_results("select * from {$table_name} {$where} order by id");
-    $count_updated_orders = $wpdb->get_var("select count(id) from {$table_name} {$where}");
+    $where = 'WHERE wc_order_id='.$order_id.' AND sync_action="JE_UPDATE" AND sync_status="SYNCED"';
+    $updated_orders = $wpdb->get_results("SELECT * FROM {$table_name} {$where} ORDER BY id");
+    $count_updated_orders = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} {$where}");
     
     // If data exists
     if($count_updated_orders > 0) {
@@ -862,9 +862,9 @@ function wji_update_order_processing( $order_id ) {
     } else {
 
         // Check apakah ada data create jurnal entry nya
-        $where = 'where wc_order_id='.$order_id.' and sync_action="JE_CREATE" and sync_status="SYNCED"';
-        $tobesync_orders = $wpdb->get_results("select * from {$table_name} {$where} order by id");
-        $count = $wpdb->get_var("select count(id) from {$table_name} {$where}");
+        $where = 'WHERE wc_order_id='.$order_id.' AND sync_action="JE_CREATE" AND sync_status="SYNCED"';
+        $tobesync_orders = $wpdb->get_results("SELECT * FROM {$table_name} {$where} ORDER BY id");
+        $count = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} {$where}");
         
         // Datanya ada, buat record baru untuk sync yang updated nya 
         if($count > 0) {
@@ -920,9 +920,10 @@ function wji_sync_order_job() {
 
     // Ambil data dr db table
     $table_name = $wpdb->prefix . 'wji_order_sync_log';
-    $where = 'where sync_status = "UNSYNCED"';
-    $tobesync_orders = $wpdb->get_results("select * from {$table_name} {$where} order by id");
-    $count = $wpdb->get_var("select count(id) from {$table_name} {$where}");
+    $where = 'WHERE sync_status = "UNSYNCED"';
+    $limit = 5; // Max numbers per order to process in one time
+    $tobesync_orders = $wpdb->get_results("SELECT * FROM {$table_name} {$where} ORDER BY id ASC LIMIT {$limit}");
+    $count = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} {$where}");
 
     // Proses data yang belum sync
     if($count > 0) {
@@ -935,6 +936,7 @@ function wji_sync_order_job() {
         $acc_stock_adjustments = $api->getJurnalAccountName( $get_options['acc_stock_adjustments'] );
 
         foreach ($tobesync_orders as $tobesync_order) {
+
             // Ambil data order nya
             $order = wc_get_order($tobesync_order->wc_order_id);
             $order_id = $order->get_id();
@@ -965,7 +967,7 @@ function wji_sync_order_job() {
                     "journal_entry" => array(
                         "transaction_date" => $order_created_date,
                         "transaction_no" => $order_trans_no,
-                        "memo" => 'Order On Hold',
+                        "memo" => 'WooCommerce Order ID: '.$order_id,
                         "transaction_account_lines_attributes" => [
                             [
                                 "account_name" => $acc_receivable,
@@ -981,7 +983,7 @@ function wji_sync_order_job() {
                             ]
                         ],
                         "tags" => [
-                            'WooCommerce Order ID: '.$order_id,
+                            'WooCommerce',
                             $order_billing_full_name
                         ]
                     )
@@ -1004,10 +1006,11 @@ function wji_sync_order_job() {
                     );
                 } else {
                     $where = [ 'id' => $tobesync_order->id ];
+                    @$message = $postJournalEntry->error_full_messages;
                     $wpdb->update($table_name, [
                             'sync_status' => 'ERROR',
                             'sync_data' => json_encode($data),
-                            'sync_note' => json_encode($postJournalEntry->error_full_messages)
+                            'sync_note' => json_encode($message)
                         ],
                         $where
                     );
@@ -1024,7 +1027,7 @@ function wji_sync_order_job() {
                     "journal_entry" => array(
                         "transaction_date" => $order_created_date,
                         "transaction_no" => $order_trans_no,
-                        "memo" => 'Order Processing',
+                        "memo" => 'WooCommerce Order ID: '.$order_id,
                         "transaction_account_lines_attributes" => [
                             [
                                 "account_name" => $acc_payment,
@@ -1040,7 +1043,7 @@ function wji_sync_order_job() {
                             ]
                         ],
                         "tags" => [
-                            $order_id,
+                            'WooCommerce',
                             $order_billing_full_name
                         ]
                     )
@@ -1075,43 +1078,69 @@ function wji_sync_order_job() {
                 $field_name = 'wh_id';
                 $warehouse_id = $get_options[$field_name];
 
-                if($warehouse_id !== NULL) {
-
-                    // Sample format data untuk order dengan status pembayaran BELUM lunas, refer ke sample di akun Jurnal.ID
-                    $data = array(
-                        "stock_adjustment" => array(
-                            "stock_adjustment_type" => 'general',
-                            "warehouse_id" => $warehouse_id,
-                            "account_name" => $acc_stock_adjustments,
-                            "date" => date("Y-m-d"),
-                            "memo" => 'WooCommerce Order ID#'.$order_id,
-                            "maintain_actual" => false
-                        )
+                if( empty($warehouse_id) ) {
+                    // Return error immediately
+                    $where = [ 'id' => $tobesync_order->id ];
+                    $table_name = $wpdb->prefix . 'wji_order_sync_log';
+                    $wpdb->update($table_name, [
+                            'sync_status' => 'ERROR',
+                            'sync_note' => 'Pengaturan Warehouse belum di set.'
+                        ],
+                        $where
                     );
+                    continue; // End current pending order, continue with next iteration
+                }
+
+                // Sample format data untuk order dengan status pembayaran BELUM lunas, refer ke sample di akun Jurnal.ID
+                $data = array(
+                    "stock_adjustment" => array(
+                        "stock_adjustment_type" => 'general',
+                        "warehouse_id" => $warehouse_id,
+                        "account_name" => $acc_stock_adjustments,
+                        "date" => date("Y-m-d"),
+                        "memo" => 'WooCommerce Order ID#'.$order_id,
+                        "maintain_actual" => false
+                    )
+                );
                     
-                    foreach ( $order->get_items() as $key => $item ) {
-                        
-                        // Get an instance of the WC_Product object (can be a product variation too)
-                        $product = $item->get_product();
-                        $product_id = $product->get_id();
+                foreach ( $order->get_items() as $key => $item ) {
+                    
+                    // Get an instance of the WC_Product object (can be a product variation too)
+                    $product = $item->get_product();
+                    $product_id = $product->get_id();
 
-                        // Get item mapping
-                        $table_name = $wpdb->prefix . 'wji_product_mapping';
-                        $where = 'where wc_item_id='.$product_id;
-                        $product = $wpdb->get_row("select * from {$table_name} {$where}");
+                    // Get item mapping
+                    $table_name = $wpdb->prefix . 'wji_product_mapping';
+                    $where = 'WHERE wc_item_id='.$product_id.' AND jurnal_item_id IS NOT NULL';
+                    $product = $wpdb->get_row("SELECT * FROM {$table_name} {$where}");
 
-                        if( !empty($product) ) {
-                            $data['stock_adjustment']['lines_attributes'][] = array(
-                                "product_name" => $api->getJurnalProductName($product->jurnal_item_id),
-                                "difference" => -$item->get_quantity(),
-                                "use_custom_average_price" => false
-                            );
-                        }
+                    if( !empty($product) ) {
+                        $data['stock_adjustment']['lines_attributes'][] = array(
+                            "product_name" => $api->getJurnalProductName($product->jurnal_item_id),
+                            "difference" => -$item->get_quantity(),
+                            "use_custom_average_price" => false
+                        );
+                    } else {
+                        // Return error immediately
+                        $where = [ 'id' => $tobesync_order->id ];
+                        $table_name = $wpdb->prefix . 'wji_order_sync_log';
+                        $wpdb->update($table_name, [
+                                'sync_data' => json_encode($data),
+                                'sync_status' => 'ERROR',
+                                'sync_note' => 'Data Product Mapping tidak ditemukan untuk Product ID: '.$product_id
+                            ],
+                            $where
+                        );
+                        continue 2; // Continue with next unsynced order
                     }
+                }
+
+                // Kalau ada data product nya
+                if( count( $data['stock_adjustment']['lines_attributes'] ) > 0 ) {
 
                     // Make the API call
                     $postStockAdjustments = $api->postStockAdjustments($data);
-                    
+
                     // Update order sync status in db
                     if( isset($postStockAdjustments->stock_adjustment) ) {
                         $where = [ 'id' => $tobesync_order->id ];
@@ -1128,7 +1157,7 @@ function wji_sync_order_job() {
                     } else {
                         $where = [ 'id' => $tobesync_order->id ];
                         $table_name = $wpdb->prefix . 'wji_order_sync_log';
-                        if($postStockAdjustments->errors) {
+                        if(@$postStockAdjustments->errors) {
                             $message = $postStockAdjustments->errors;
                         }
                         if(@$postStockAdjustments->error_full_messages) {
@@ -1143,8 +1172,16 @@ function wji_sync_order_job() {
                         );
                     } // end if postStockAdjustments
                 } else {
-                    write_log('Pengaturan Warehouse belum di set.');
-                } // end if warehouse id 
+
+                    $where = [ 'id' => $tobesync_order->id ];
+                    $table_name = $wpdb->prefix . 'wji_order_sync_log';
+                    $wpdb->update($table_name, [
+                            'sync_status' => 'ERROR',
+                            'sync_note' => 'Data produk tidak ada'
+                        ],
+                        $where
+                    );
+                }
             } // end if SA_CREATE
         } // end if foreach tobesync_orders
     } // end if count
