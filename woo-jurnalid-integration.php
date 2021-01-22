@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           1.9.1
+ * Version:           1.9.2
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -1058,7 +1058,7 @@ function wji_sync_order_job() {
     // Ambil data dr db table
     $table_name = $wpdb->prefix . 'wji_order_sync_log';
     $where = 'WHERE sync_status = "UNSYNCED"';
-    $limit = 10; // Max numbers per order to process in one time
+    $limit = 20; // Max numbers per order to process in one time
     $tobesync_orders = $wpdb->get_results("SELECT * FROM {$table_name} {$where} ORDER BY id ASC LIMIT {$limit}");
     $count = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} {$where}");
 
@@ -1166,8 +1166,9 @@ function wji_sync_order_job() {
                 // Get variables
                 $jurnal_entry_id = $tobesync_order->jurnal_entry_id;
                 $order_payment = 'acc_payment_'.$order->get_payment_method();
+                write_log('Payment method '.$order_payment);
                 $acc_payment = $api->getJurnalAccountName( $get_options[$order_payment] );
-
+                write_log('Acc payment '.$acc_payment);
                 // Sample format data untuk order dengan status pembayaran SUDAH lunas, refer ke sample di akun Jurnal.ID
                 $data = array(
                     "journal_entry" => array(
@@ -1380,6 +1381,33 @@ function wji_sync_order_job() {
             } // end all sync_action conditions
         } // end if foreach tobesync_orders
     } // end if count
+}
+
+/**
+ * Retry sync order job
+ */
+add_action ('wji_cronjob_event', 'wji_retry_failed_sync_job');
+function wji_retry_failed_sync_job() {
+    global $wpdb;
+    $api = new WJI_IntegrationAPI();
+
+    // Try to run failed task on next job
+    $table_name = $wpdb->prefix . 'wji_order_sync_log';
+    $where = 'WHERE sync_status = "ERROR" AND sync_action = "JE_UPDATE"';
+    $limit = 10;
+    $tobesync_orders = $wpdb->get_results("SELECT * FROM {$table_name} {$where} ORDER BY id ASC LIMIT {$limit}");
+    $count = $wpdb->get_var("SELECT COUNT(id) FROM {$table_name} {$where}");// Proses data yang belum sync
+    
+    if($count > 0) {
+        foreach ($tobesync_orders as $tobesync_order) {
+            $where = [ 'id' => $tobesync_order->id ];
+            $wpdb->update($table_name, [
+                    'sync_status' => 'UNSYNCED'
+                ],
+                $where
+            );
+        }
+    }
 }
 
 /* ------------------------------------------------------------------------ *

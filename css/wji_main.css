@@ -15,7 +15,7 @@
 }
 
 .column-id {
-    width: 4%;
+    width: 6%;
     font-weight: bold;
     text-align: center !important;
 }
@@ -25,7 +25,7 @@
 }
 
 .column-sync_action {
-    width: 16%;
+    width: 17%;
 }
 
 .column-sync_status {
@@ -33,7 +33,7 @@
 }
 
 .column-sync_note {
-    width: 40%;
+    width: 37%;
 }
 
 .column-sync_at {
