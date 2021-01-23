@@ -23,3 +23,17 @@ Sync runs automatically every 5 minutes using WP-Cron, currently processing up t
 Valid Jurnal.ID API key. You can get this from your active account.
 
 See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan-integrasi-melalui-api-key
+
+## Screenshots
+
+### Plugin Settings
+![Plugin Settings](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/1-plugin-settings.jpg)
+
+### Account Mapping
+![Account Mapping](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/2-account-mapping.jpg)
+
+### Product Mapping
+![Product Mapping](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/3-product-mapping.jpg)
+
+### Sync History
+![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/4-sync-history.jpg)
