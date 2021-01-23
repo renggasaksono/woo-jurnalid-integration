@@ -12,7 +12,7 @@ This plugin if FREE to use, tested latest on WordPress v5.6.
 - Sync History
 
 ## Automatic Sync
-Sync runs automatically every 10 minutes using WP-Cron, currently processing up to 20 records per job.
+Sync runs automatically every 5 minutes using WP-Cron, currently processing up to 20 records per job.
 - Create Journal Entry when new Order is On Hold
 - Update Journal Entry when Order is Processing
 - Delete Journal Entry when Order is Cancelled
