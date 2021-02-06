@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           1.9.2
+ * Version:           1.9.3
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -725,7 +725,11 @@ function wji_new_order_created( $order_id, $order ) {
     $api = new WJI_IntegrationAPI();
 
     $order_status = $order->get_status();
+    $order_is_paid = $order->is_paid();
     $table_name = $wpdb->prefix . 'wji_order_sync_log';
+
+    // Debug order is paid status
+    write_log('Order ID '.$order_id.' status '.$order_status.' is paid '.$order_is_paid);
 
     // Check order status
     if($order_status == 'pending') {
@@ -850,6 +854,13 @@ add_action( 'woocommerce_order_status_processing', 'wji_update_order_processing'
 function wji_update_order_processing( $order_id ) {
     global $wpdb;
 
+    // Debug order is paid status
+    $order = wc_get_order( $order_id );
+    if($order) {
+        $order_paid_status = $order->is_paid();
+        write_log('Order ID '.$order_id.' status '.$order_status.' is paid '.$order_paid_status);
+    }
+    
     // Check for unsync orders haven't been updated
     $table_name = $wpdb->prefix . 'wji_order_sync_log';
     $where = 'WHERE wc_order_id='.$order_id.' AND sync_action="JE_UPDATE" AND sync_status="SYNCED"';
@@ -1085,6 +1096,21 @@ function wji_sync_order_job() {
 
             // Ambil data order nya
             $order = wc_get_order($tobesync_order->wc_order_id);
+
+            // If order does not exist
+            if(!$order) {
+                // Return error immediately
+                $where = [ 'id' => $tobesync_order->id ];
+                $table_name = $wpdb->prefix . 'wji_order_sync_log';
+                $wpdb->update($table_name, [
+                        'sync_status' => 'ERROR',
+                        'sync_note' => 'Data order tidak ditemukan.'
+                    ],
+                    $where
+                );
+                continue; // End current pending order, continue with next iteration 
+            }
+
             $order_id = $order->get_id();
             $order_created_date = $order->get_date_created()->format( 'Y-m-d' );
             $order_billing_first_name = strtoupper($order->get_billing_first_name());
