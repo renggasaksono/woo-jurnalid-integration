@@ -143,16 +143,16 @@ class WJI_TableList extends WP_List_Table {
 		$label = '';
 		switch($item->sync_status) {
 			case 'UNSYNCED':
-				$status = 'Dalam antrian';
+				$status = 'Pending';
 				$label = 'primary';
 				break;
 			case 'SYNCED':
-				$status = 'Berhasil tersinkron';
+				$status = 'Success';
 				$label = 'success';
 				break;
 			case 'ERROR':
 			default:
-				$status = 'Gagal tersinkron';
+				$status = 'Failed';
 				$label = 'danger';
 		}
 		return '<span class="bc-label '.$label.'">'.$status.'</span>';
@@ -167,31 +167,31 @@ class WJI_TableList extends WP_List_Table {
 					if($item->sync_status == 'SYNCED') {
 						$je_id = $item->jurnal_entry_id;
 						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank">'.$je_id.'</a>';
-						$message = 'Order on hold. Jurnal entry berhasil dibuat ID '.$link;
+						$message = 'Order unpaid. Journal entry created '.$link;
 						break;
 					}
 				case 'JE_UPDATE':
 					if($item->sync_status == 'SYNCED') {
 						$je_id = $item->jurnal_entry_id;
 						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank">'.$je_id.'</a>';
-						$message = 'Order processing. Jurnal entry berhasil di update ID '.$link;
+						$message = 'Order paid. Journal entry updated '.$link;
 						break;
 					}
 				case 'JE_DELETE':
 					if($item->sync_status == 'SYNCED') {
-						$message = 'Order cancelled. Journal entry berhasil dihapus';
+						$message = 'Order cancelled. Journal entry deleted';
 						break;
 					}
 				case 'SA_CREATE':
 					if($item->sync_status == 'SYNCED') {
 						$sa_id = $item->stock_adj_id;
 						$link = '<a href="https://my.jurnal.id/stock_adjustments/'.$sa_id.'" target="_blank">'.$sa_id.'</a>';
-						$message = 'Order processing. Stock adjustment berhasil dibuat ID '.$link;
+						$message = 'Order processing. Stock adjustment created '.$link;
 						break;
 					}
 				case 'SA_DELETE':
 					if($item->sync_status == 'SYNCED') {
-						$message = 'Order cancelled. Stock adjustment berhasil dihapus';
+						$message = 'Order cancelled. Stock adjustment deleted';
 						break;
 					}
 				default:

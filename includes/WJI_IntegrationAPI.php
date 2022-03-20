@@ -1,10 +1,13 @@
 <?php
 
 class WJI_IntegrationAPI {
+
 	private $apikey;
-	const baseUrl = 'https://api.jurnal.id/core/api/v1/';
+	const 	baseUrl 	= 'https://api.jurnal.id/core/api/v1/';
 	private $endpoint;
 	private $body;
+	private $meta_key = '_wji_journal_entry_id';
+	private $stock_meta_key = '_wji_stock_adjustment_id';
 
 	public function __construct() {
 		global $wpdb;
@@ -66,6 +69,14 @@ class WJI_IntegrationAPI {
 			'timeout' => 75,			    
 			'body' => $this->body
 		]);	
+	}
+
+	public function getMetaKey() {
+		return $this->meta_key;
+	}
+
+	public function getStockMetaKey() {
+		return $this->stock_meta_key;
 	}
 
 	public function getAllJurnalWarehouses() {
@@ -281,5 +292,95 @@ class WJI_IntegrationAPI {
  			return $jurnal_products;
  		}
 	}
+
+	public function getSyncTableName() {
+		global $wpdb;
+		return $wpdb->prefix . 'wji_order_sync_log';
+	}
+
+	public function get_paid_sync_data( $order ) {
+
+		$get_options = get_option('wji_account_mapping_options');
+		$general_options = get_option('wji_plugin_general_options');
+		$accounts = array();
+
+		// Set tax accounts if enable in options
+		if( $general_options['include_tax'] ) {
+
+			$order_tax = round($order->get_total() * 0.1);
+			$order_total_after_tax = $order->get_total() - $order_tax;
+
+			$accounts = [
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_payment_'.$order->get_payment_method()] ),
+					"debit" => $order->get_total(),
+				],
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_tax'] ),
+					"credit" => $order_tax,
+				],
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_sales'] ),
+					"credit" => $order_total_after_tax,
+				]
+			];
+
+		} else {
+
+			$accounts = [
+				[
+					"account_name" => $get_options['acc_payment_'.$order->get_payment_method()],
+					"debit" => $order->get_total(),
+				],
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_sales'] ),
+					"credit" => $order->get_total(),
+				]
+			];
+
+		}
+
+		return array(
+			"journal_entry" => array(
+				"transaction_date" => $order->get_date_created()->format( 'Y-m-d' ),
+				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ),
+				"memo" => 'WooCommerce Order ID: '.$order->get_id(),
+				"transaction_account_lines_attributes" => $accounts,
+				"tags" => [
+					'WooCommerce',
+					strtoupper( $order->get_formatted_billing_full_name() )
+				]
+			)
+		);
+
+	}
+
+	public function get_unpaid_sync_data( $order ) {
+
+		$get_options = get_option('wji_account_mapping_options');
+
+		return array(
+			"journal_entry" => array(
+				"transaction_date" => $order->get_date_created()->format( 'Y-m-d' ),
+				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ),
+				"memo" => 'WooCommerce Order ID: '.$order->get_id(),
+				"transaction_account_lines_attributes" => [
+					[
+						"account_name" => $this->getJurnalAccountName( $get_options['acc_receivable'] ),
+						"debit" => $order->get_total(),
+					],
+					[
+						"account_name" => $this->getJurnalAccountName( $get_options['acc_sales'] ),
+						"credit" => $order->get_total(),
+					]
+				],
+				"tags" => [
+					'WooCommerce',
+					strtoupper( $order->get_formatted_billing_full_name() )
+				]
+			)
+		);
+	}
+	
 }
 ?>
