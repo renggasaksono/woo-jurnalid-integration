@@ -41,7 +41,10 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 ![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/5-sync-process-flow)
 
 ## Changes Log
-
+### 2.4.0
+- Update: Add wpnonce validation to retry sync function
+### 2.3.0
+- Update: improve sync note for unmap products
 ### 2.2.0
 - Update: Remove plugin uninstall hook
 ### 2.1.0

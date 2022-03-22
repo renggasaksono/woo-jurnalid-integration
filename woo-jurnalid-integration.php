@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           2.3.0
+ * Version:           2.4.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -434,45 +434,42 @@ function wji_order_sync_callback() {
     $tablelist = new WJI_TableList();
     $api = new WJI_IntegrationAPI();
 
-    // Check if manual sync called
-    if( isset($_GET[ 'action' ])=='run_sync' && is_numeric($_GET[ 'sync_id' ]) && is_numeric($_GET[ 'order_id' ]) ) {
+    // Verify nonce
+    if ( isset($_GET['_wjinonce']) || wp_verify_nonce( isset($_GET['_wjinonce']), 'retry_sync' ) || is_numeric( $_GET[ '_syncid' ] ) ) {
 
-        // Verify if sync already success
-        $synced_count = $wpdb->get_var(
-                            $wpdb->prepare( "SELECT COUNT(id) from {$api->getSyncTableName()} where id = %d and sync_status='SYNCED'",
-                                $_GET['sync_id']
-                            )
-                        );
+        $sync_id = $_GET['_syncid'];
 
-        if( ! $synced_count ) {
-            
+        // Get sync data
+        $sync_data = $wpdb->get_row(
+            $wpdb->prepare( "SELECT * from {$api->getSyncTableName()} where id = %d",
+                $sync_id
+            )
+        );
+
+        if( $sync_data->sync_status != 'SYNCED' ) {
+
             // Display notice
             echo '
-            <div class="notice notice-success is-dismissible">
+                <div class="notice notice-success is-dismissible">
                 <p>Sync in process, please <a href="?page=wji_settings&tab=order_options">refresh page</a> after a while</p>
-            </div>
+                </div>
             ';
 
             // Get sync action
-            $get_sync_action = $wpdb->get_var(
-                $wpdb->prepare( "SELECT sync_action FROM {$api->getSyncTableName()} where id = %d",
-                    $_GET['sync_id']
-                )
-            );
+            $sync_action = $sync_data->sync_action;
+            $order_id = $sync_data->wc_order_id;
 
             // Run sync process
-            if( $get_sync_action == 'JE_CREATE' || $get_sync_action == 'JE_UPDATE' ) {
-                wji_sync_journal_entry( (int) $_GET['sync_id'], (int) $_GET['order_id'] );
-            } elseif( $get_sync_action == 'SA_CREATE' ) {
-                wji_sync_stock_adjustment( (int) $_GET['sync_id'], (int) $_GET['order_id'] );
-            } elseif( $get_sync_action == 'JE_DELETE' ) {
-                wji_desync_journal_entry( (int) $_GET['sync_id'], (int) $_GET['order_id'] );
-            } elseif( $get_sync_action == 'SA_DELETE' ) {
-                wji_desync_stock_adjustment( (int) $_GET['sync_id'], (int) $_GET['order_id'] );
+            if( $sync_action == 'JE_CREATE' || $sync_action == 'JE_UPDATE' ) {
+                wji_sync_journal_entry( (int) $sync_id, (int) $order_id );
+            } elseif( $sync_action == 'SA_CREATE' ) {
+                wji_sync_stock_adjustment( (int) $sync_id, (int) $order_id );
+            } elseif( $sync_action == 'JE_DELETE' ) {
+                wji_desync_journal_entry( (int) $sync_id, (int) $order_id );
+            } elseif( $sync_action == 'SA_DELETE' ) {
+                wji_desync_stock_adjustment( (int) $sync_id, (int) $order_id );
             } 
-
         }
-        
     }
 
     $data = [];

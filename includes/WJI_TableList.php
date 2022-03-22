@@ -65,17 +65,24 @@ class WJI_TableList extends WP_List_Table {
 	public function column_id($item) {
 		
 		$user = wp_get_current_user();
+
+		// Create link to run sync manually
 		if ( in_array( 'administrator', (array) $user->roles ) ) {
+
 			// Only display links for admin for other than success status
 			$retry_statuses = [ 'ERROR', 'PENDING' ];
+			
 			if( in_array( $item->sync_status, (array) $retry_statuses ) ) {
-				return sprintf('<a href="?page=%s&tab=order_options&action=%s&sync_id=%s&order_id=%s" title="Click to retry sync">%s</a>',
-					$_REQUEST['page'],
-					'run_sync',
-					$item->id,
-					$item->wc_order_id,
+				
+				// Generate safe links
+				$url = sprintf('options-general.php?page=wji_settings&tab=order_options&_syncid=%s',
 					$item->id
 				);
+				
+				$nonce_url = add_query_arg( '_wjinonce', wp_create_nonce( 'retry_sync' ), $url );
+
+				return '<a href="'.$nonce_url.'" title="Click to retry sync">'.$item->id.'</a>';
+			
 			} else {
 				return $item->id;
 			}
