@@ -72,15 +72,15 @@ class WJI_DbTableCreator {
 				stock_adj_id		BIGINT,
 				sync_data    		TEXT NOT NULL,
 				sync_action			VARCHAR(10),
-				sync_status			VARCHAR(10) NOT NULL DEFAULT 'UNSYNCED',
+				sync_status			VARCHAR(10) NOT NULL DEFAULT 'PENDING',
 				sync_note			TEXT,
 				sync_at 			TIMESTAMP,
 				created_at 			TIMESTAMP NOT NULL DEFAULT NOW(),
 				primary key (id)
 			) {$charset};
 		";
-		// sync_action => 'JE_CREATE', 'JE_UPDATE', 'JE_CANCEL', 'SA_CREATE', 'SA_UPDATE', 'SA_CANCEL'
-		// sync_status => 'UNSYNCED', 'PROCESS', 'SYNCED', 'ERROR'
+		// sync_action => 'JE_CREATE', 'JE_UPDATE', 'JE_DELETE', 'SA_CREATE', 'SA_DELETE'
+		// sync_status => 'PENDING', 'SYNCED', 'ERROR'
 
 		dbDelta( $query );
 	}

@@ -63,6 +63,24 @@ class WJI_TableList extends WP_List_Table {
 	}
 
 	public function column_id($item) {
+		
+		$user = wp_get_current_user();
+		if ( in_array( 'administrator', (array) $user->roles ) ) {
+			// Only display links for admin for other than success status
+			$retry_statuses = [ 'ERROR', 'PENDING' ];
+			if( in_array( $item->sync_status, (array) $retry_statuses ) ) {
+				return sprintf('<a href="?page=%s&tab=order_options&action=%s&sync_id=%s&order_id=%s" title="Click to retry sync">%s</a>',
+					$_REQUEST['page'],
+					'run_sync',
+					$item->id,
+					$item->wc_order_id,
+					$item->id
+				);
+			} else {
+				return $item->id;
+			}
+		}
+		
 		return $item->id;
 	}
 
@@ -101,7 +119,7 @@ class WJI_TableList extends WP_List_Table {
 	}
 
 	public function column_wc_order_id($item) {
-		return '<a href="'.get_edit_post_link($item->wc_order_id).'">'.esc_html($item->wc_order_id).'</a>';
+		return '<a href="'.get_edit_post_link($item->wc_order_id).'" title="View order">'.esc_html($item->wc_order_id).'</a>';
 	}
 
 	public function column_jurnal_entry_id($item) {
@@ -142,7 +160,7 @@ class WJI_TableList extends WP_List_Table {
 		$status = '';
 		$label = '';
 		switch($item->sync_status) {
-			case 'UNSYNCED':
+			case 'PENDING':
 				$status = 'Pending';
 				$label = 'primary';
 				break;
@@ -166,32 +184,32 @@ class WJI_TableList extends WP_List_Table {
 				case 'JE_CREATE':
 					if($item->sync_status == 'SYNCED') {
 						$je_id = $item->jurnal_entry_id;
-						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank">'.$je_id.'</a>';
-						$message = 'Order unpaid. Journal entry created '.$link;
+						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank" title="View on Jurnal.ID">'.$je_id.'</a>';
+						$message = 'Journal entry succesfully created '.$link;
 						break;
 					}
 				case 'JE_UPDATE':
 					if($item->sync_status == 'SYNCED') {
 						$je_id = $item->jurnal_entry_id;
-						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank">'.$je_id.'</a>';
-						$message = 'Order paid. Journal entry updated '.$link;
+						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank" title="View on Jurnal.ID">'.$je_id.'</a>';
+						$message = 'Journal entry succesfully updated '.$link;
 						break;
 					}
 				case 'JE_DELETE':
 					if($item->sync_status == 'SYNCED') {
-						$message = 'Order cancelled. Journal entry deleted';
+						$message = 'Journal entry succesfully deleted';
 						break;
 					}
 				case 'SA_CREATE':
 					if($item->sync_status == 'SYNCED') {
 						$sa_id = $item->stock_adj_id;
-						$link = '<a href="https://my.jurnal.id/stock_adjustments/'.$sa_id.'" target="_blank">'.$sa_id.'</a>';
-						$message = 'Order processing. Stock adjustment created '.$link;
+						$link = '<a href="https://my.jurnal.id/stock_adjustments/'.$sa_id.'" target="_blank" title="View on Jurnal.ID">'.$sa_id.'</a>';
+						$message = 'Stock adjustment succesfully created '.$link;
 						break;
 					}
 				case 'SA_DELETE':
 					if($item->sync_status == 'SYNCED') {
-						$message = 'Order cancelled. Stock adjustment deleted';
+						$message = 'Stock adjustment succesfully deleted';
 						break;
 					}
 				default:

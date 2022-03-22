@@ -40,16 +40,23 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 ### Sync Process Flow
 ![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/5-sync-process-flow)
 
-## To Do
-- Optimize calculate tax function
-- Create option to manually run sync
-- Implement filter and search function in log page
-- Implement filter and search function in product mapping page
-- Improve notes for errors returned from Jurnal API
-
 ## Changes Log
-
-### 2.0
+### 2.1.0
+- New: Run order sync from admin setting
+- New: Add sync validation for order status changes from admin dashboard
+- Update: Change woocommerce hook on web checkout
+- Update: Optimize log based on specific action (create/update/delete)
+- Update: Rename sync status from Unsyced to Pending
+- Update: Minor bug fixes
+### 2.0.0
 - Remove cron functions (fixed bug pending sync logs)
 - Add new function to add metadata to order
 - Optimize and refactor almost 80% of overall sync process
+
+## To Do
+- Filter and search function in log page
+- Filter and search function in product mapping page
+- Bulk actions for sync log ( run sync, delete)
+- Unset product mapping
+- Add custom value for calculate tax function
+- Improve notes for errors returned from Jurnal API
