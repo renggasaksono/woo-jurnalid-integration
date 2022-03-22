@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           2.2.0
+ * Version:           2.3.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -1051,6 +1051,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
     $get_general_options = get_option('wji_plugin_general_options');
     $get_account_options = get_option('wji_account_mapping_options');
     $get_warehouse = $get_general_options['wh_id'];
+    $sync_note = 'Product mapping tidak tersedia: ';
 
     if( empty($get_warehouse) ) {
         // Return error immediately
@@ -1086,6 +1087,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
         $product_mapping = $wpdb->get_row("SELECT * FROM {$product_mapping_table} {$product_mapping_where}");
 
         if( ! $product_mapping ) {
+            $sync_note .= $wc_item->get_name().", ";
             write_log('Skip unmap wc_item_id#'.$product_id);
             continue;
         } else {
@@ -1133,7 +1135,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
 
         return $wpdb->update( $api->getSyncTableName(), [
                 'sync_status'   => 'ERROR',
-                'sync_note'     => 'Data product mapping tidak tersedia'
+                'sync_note'     => rtrim( trim($sync_note), ','),
             ],
             [ 'id' => $sync_id ]
         );
