@@ -41,6 +41,9 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 ![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/5-sync-process-flow)
 
 ## Changes Log
+
+### 2.2.0
+- Update: Remove plugin uninstall hook
 ### 2.1.0
 - New: Run order sync from admin setting
 - New: Add sync validation for order status changes from admin dashboard

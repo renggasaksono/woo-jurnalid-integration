@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           2.1.0
+ * Version:           2.2.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://masrengga.com
@@ -61,22 +61,6 @@ function wji_deactivate() {
     delete_transient( 'wji_cached_journal_products' );
     delete_transient( 'wji_cached_journal_account' );
     delete_transient( 'wji_cached_journal_warehouses' );
-}
-
-/**
- * Run on plugin uninstallation
- */
-register_uninstall_hook( __FILE__, 'wji_uninstall');
-function wji_uninstall() {
-    global $wpdb;
-
-    // Delete plugin options
-    delete_option( 'wji_plugin_general_options' );
-    delete_option( 'wji_account_mapping_options' );
-
-    // Drop db tables
-    $wpdb->query( "DROP TABLE {$wpdb->prefix}wji_product_mapping" );
-    $wpdb->query( "DROP TABLE {$wpdb->prefix}wji_order_sync_log" );
 }
 
 /* ------------------------------------------------------------------------ *
