@@ -1,5 +1,9 @@
 <?php
 
+if( ! class_exists( 'WJI_IntegrationAPI' ) ) {
+    require_once( 'WJI_IntegrationAPI.php' );
+}
+
 class WJI_AjaxCallback {
 
 	static function wji_item_ajax_callback(){
@@ -60,6 +64,21 @@ class WJI_AjaxCallback {
 		}
 
 	 	echo json_encode(false);wp_die();
+	}
+
+	static function wji_get_jurnal_products_callback() {
+
+		// Set params
+		$params = [];
+		$params['page'] = isset($_GET['page']) ? $_GET['page'] : 1;
+		$params['q'] = isset($_GET['q']) ? $_GET['q'] : '';
+		// write_log($params);
+
+		// Iniate API class
+		$api = new WJI_IntegrationAPI;
+		$response = $api->getAllJurnalItems($params);
+		echo $response;
+		wp_die();
 	}
 }
 ?>

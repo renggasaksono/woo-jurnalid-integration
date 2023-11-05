@@ -1,20 +1,37 @@
 jQuery(function($){
 
+	// Show product mapping option on click
 	$('.bc-editable-link').click(function() {
 		jQuery(this).addClass('hidden').siblings('.bc-editable-input').removeClass('hidden');
 		return false;
 	});
 
+	// Hide product mapping option on click
 	$('.bc-editable-cancel').click(function() {
 		jQuery(this).parent('.bc-editable-input').addClass('hidden').siblings('.bc-editable-link').removeClass('hidden');
 		return false;
 	});
 
+	// Select2 product mapping
 	$('.bc-editable-select2').select2({
-		placeholder: 'Pilih Item Jurnal.ID',
-      	allowClear: true
+		ajax: {
+			url: ajaxurl, // AJAX URL is predefined in WordPress admin
+			dataType: 'json',
+			data: function (params) {
+  				return {
+    				q: params.term, // search query,
+					page: params.page || 1,
+    				action: 'wji_select2_products' // AJAX action for admin-ajax.php
+  				};
+			},
+			cache: true
+		},
+		placeholder: 'Cari produk',
+      	allowClear: true,
+		minimumInputLength: 2
 	});
 
+	// Save product mapping on submit
 	$('.bc-editable-submit').click(function() {
 		let thisBtn = $(this);
 		let wc_item_id = $(this).siblings('.bc-editable-wc_item_id').val();
@@ -69,17 +86,20 @@ jQuery(function($){
 		return false;
 	});
 
+	// Account mapping
 	$('.wj-accounts-select2').select2({
 		placeholder: 'Pilih Akun Jurnal.ID',
       	allowClear: true
 	});
 
+	// Warehouse mapping
 	$('.wj-warehouses-select2').select2({
 		placeholder: 'Pilih Gudang Jurnal.ID',
       	allowClear: true,
       	width : '200px'
 	});
 
+	// Deprecated function for reference
 	let s2_wh = $('#bc-wh-select2').select2({
   		ajax: {
 			url: ajaxurl, // AJAX URL is predefined in WordPress admin
@@ -108,12 +128,14 @@ jQuery(function($){
 		// tags: true,
 	});
 
+	// Deprecated function for reference
 	$('#bc-wh-select2').on('select2:select', function(s2) {
 		let data = s2.params.data;
 		let hidden = "<input type='hidden' name='bc-wh-value["+data.id+"]' value='"+data.text+"'/>";
 		$(this).after(hidden);
 	});
 
+	// Deprecated function for reference
 	$('#bc-wh-select2').on('select2:unselect', function(s2) {
 		let data = s2.params.data;
 		let actualData = $('#bc-wh-select2').select2('data');

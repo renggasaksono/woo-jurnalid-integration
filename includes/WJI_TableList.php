@@ -111,12 +111,6 @@ class WJI_TableList extends WP_List_Table {
 		$html .= '<a class="bc-editable-cancel" href="#"><span class="dashicons dashicons-no-alt"></span></a>';
 		$html .= '<select name="wcbc_select2_item" class="bc-editable-select2" style="width:50%;max-width:20em;">';
 		$html .= '<option></option>';
-				$api = new WJI_IntegrationAPI;
-				if($jurnal_products = $api->getJournalProducts()) {
-			 		foreach ($jurnal_products as $product) {
-			 				$html .= '<option value="' . esc_html($product['id']) . '">' . esc_html($product['text']) . '</option>';
-			 		}
-			 	}
 		$html .= '</select>';
 		$html .= '<input type="hidden" class="bc-editable-wc_item_id" value="'.esc_html($item->wc_item_id).'">';
 		$html .= '<a class="button bc-editable-submit" href="#" > Simpan </a>';

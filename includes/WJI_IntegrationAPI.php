@@ -103,36 +103,42 @@ class WJI_IntegrationAPI {
 		}
 	}
 
-	public function getAllJurnalItems() {
+	// Used by WJI_AjaxCallback:wji_get_jurnal_products_callback()
+	public function getAllJurnalItems($params) {
 
-		$page_size = 25;
-		$page = 1;
+		$page = isset($params['page']) ? $params['page'] : 1;
+		$q = isset($params['q']) ? $params['q'] : '';
 
-		// Check if item count is set
+		// Get warehouse option
 		$general_options = get_option('wji_plugin_general_options');
-    	if( isset( $general_options[ 'jurnal_item_count' ] ) ) {
-    		$page_size = $general_options['jurnal_item_count'];
-    	}
+		$warehouse_id = isset( $general_options[ 'wh_id' ] ) ? $general_options['wh_id'] : '';
 
-		$this->endpoint = 'products';
+		// Use Select2 resources
+		$this->endpoint = 'select2_resources/get_product';
 		$this->body = [
-			'page' 		=> $page,
-			'page_size'	=> $page_size
+			'q'				=> $q,
+			'page' 			=> $page,
+			'type'			=> 'tracked',
+			'warehouse_id'	=> $warehouse_id
 		];
 
 		$response = $this->get();
+		// write_log($response);
 
 		if(is_array($response)) {
 			$data = json_decode($response['body']);
+			// write_log($data);
 			$formatted_data = array();
-	 		foreach ($data->products as $key => $product) {
-	 			$formatted_data[$key]['id'] = $product->id;
-	 			$formatted_data[$key]['text'] = $product->product_code.' - '.$product->name;
+			$formatted_data['results'] = [];
+	 		foreach ($data->data as $key => $product) {
+	 			$formatted_data['results'][$key]['id'] = $product->id;
+	 			$formatted_data['results'][$key]['text'] = $product->product_code.' - '.$product->name;
 	 		}
-	 		return $formatted_data;
+			// write_log(json_encode($formatted_data));
+			return json_encode($formatted_data);
 		}
 		else {
-			return $response;
+			return json_encode($response);
 		}
 	}
 
@@ -276,10 +282,12 @@ class WJI_IntegrationAPI {
 		}
 	}
 
+	// Deprecated function for reference
 	public function getJournalProducts() {
 		// Check cached data exists
+		// write_log( get_transient( 'wji_cached_journal_products' ) );
 		if( false === ( $jurnal_products = get_transient( 'wji_cached_journal_products' ) ) ) {
-			$jurnal_products = $this->getAllJurnalItems();
+			$jurnal_products = $this->getAllJurnalItems($params = null);
 
 	 		if(is_array($jurnal_products)) {
 		 		// Stores data in cache for future uses

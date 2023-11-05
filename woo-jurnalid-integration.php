@@ -243,14 +243,6 @@ function wji_initialize_general_options() {
         'stock_settings_section'            // The name of the section to which this field belongs
     );
 
-    add_settings_field( 
-        'jurnal_item_count',                // ID used to identify the field throughout the theme
-        'Total Jumlah Produk',              // The label to the left of the option interface element
-        'wji_jurnal_item_count_callback',   // The name of the function responsible for rendering the option interface
-        'wji_plugin_general_options',       // The page on which this option will be displayed
-        'stock_settings_section'            // The name of the section to which this field belongs
-    );
-
     // Register the fields with WordPress 
     register_setting(
         'wji_plugin_general_options',           // A settings group name
@@ -435,7 +427,7 @@ function wji_order_sync_callback() {
     $api = new WJI_IntegrationAPI();
 
     // Verify nonce
-    if ( isset($_GET['_wjinonce']) || wp_verify_nonce( isset($_GET['_wjinonce']), 'retry_sync' ) || is_numeric( $_GET[ '_syncid' ] ) ) {
+    if ( isset($_GET['_wjinonce']) || wp_verify_nonce( isset($_GET['_wjinonce']), 'retry_sync' ) || is_numeric( isset($_GET[ '_syncid' ]) ) ) {
 
         $sync_id = $_GET['_syncid'];
 
@@ -542,17 +534,6 @@ function wji_wh_id_callback($args) {
         }
         echo $html;
     }
-}
-
-function wji_jurnal_item_count_callback($args) {
-    $get_options = get_option('wji_plugin_general_options');
-    $field_name = 'jurnal_item_count';
-    if ( !array_key_exists($field_name,$get_options) ) {
-        $get_options[$field_name] = '';
-    }
-    $options = $get_options;
-    $html = '<input type = "text" class="regular-text" id="jurnal_item_count" name="wji_plugin_general_options[jurnal_item_count]" value="' . sanitize_text_field($options['jurnal_item_count']) . '">'; 
-    echo $html;
 }
 
 function wji_include_tax_callback($args) {
@@ -1192,6 +1173,7 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
 add_action( 'wp_ajax_wji_translasi_item', ['WJI_AjaxCallback', 'wji_item_ajax_callback'] ); // ajax cari item di jurnal
 add_action( 'wp_ajax_wji_translasi_item_save', ['WJI_AjaxCallback', 'wji_save_item_ajax_callback'] ); // ajax save mapping item
 add_action( 'wp_ajax_wji_check_used_item', ['WJI_AjaxCallback', 'wji_check_used_item_ajax_callback'] ); // ajax cek mapping jika sudah digunakan
+add_action( 'wp_ajax_wji_select2_products', ['WJI_AjaxCallback', 'wji_get_jurnal_products_callback'] ); // ajax get select2 products resource
 
 /* ------------------------------------------------------------------------ *
  * Enqueue Plugin Scripts
