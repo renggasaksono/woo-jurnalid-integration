@@ -2,10 +2,10 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           2.4.0
+ * Version:           3.2.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
- * Author URI:        https://masrengga.com
+ * Author URI:        https://id.linkedin.com/in/renggasaksono
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  */
@@ -140,7 +140,7 @@ function wji_settings_display() {
     <div class="wrap">
         <h2>WooCommerce Jurnal.ID Integration</h2>
 
-        <?php $active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'general_options'; ?>
+        <?php $active_tab = isset( $_GET[ 'tab' ] ) ? sanitize_text_field($_GET[ 'tab' ]) : 'general_options'; ?>
         <h2 class="nav-tab-wrapper">
             <a href="?page=wji_settings&tab=general_options" class="nav-tab <?php echo $active_tab == 'general_options' ? 'nav-tab-active' : ''; ?>">Jurnal.ID Setting</a>
             <a href="?page=wji_settings&tab=account_options" class="nav-tab <?php echo $active_tab == 'account_options' ? 'nav-tab-active' : ''; ?>">Account Mapping</a>
@@ -430,10 +430,10 @@ function wji_order_sync_callback() {
     $tablelist = new WJI_TableList();
     $api = new WJI_IntegrationAPI();
 
-    // Verify nonce
+    // Retry sync function
     if ( isset($_GET['_wjinonce']) || wp_verify_nonce( isset($_GET['_wjinonce']), 'retry_sync' ) || is_numeric( isset($_GET[ '_syncid' ]) ) ) {
 
-        $sync_id = $_GET['_syncid'];
+        $sync_id = sanitize_key($_GET['_syncid']);
 
         // Get sync data
         $sync_data = $wpdb->get_row(
@@ -468,11 +468,12 @@ function wji_order_sync_callback() {
         }
     }
 
+    // Render table
     $data = [];
     $offset = $tablelist->getPerpage() * ($tablelist->get_pagenum() - 1);
-    $where = '';
+    $where = ( isset($_GET['sync_status']) && $_GET['sync_status'] !== '' ) ? 'where sync_status="'.sanitize_text_field($_GET['sync_status']).'"' : '';
 
-    $products = $wpdb->get_results("select * from {$api->getSyncTableName()} order by created_at desc limit {$tablelist->getPerpage()} offset {$offset}");
+    $products = $wpdb->get_results("select * from {$api->getSyncTableName()} {$where} order by created_at desc limit {$tablelist->getPerpage()} offset {$offset}");
     $count = $wpdb->get_var("select count(id) from {$api->getSyncTableName()} {$where}");
     $tablelist->setTotalItem($count);
     $tablelist->setDatas($products);

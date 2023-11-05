@@ -40,7 +40,20 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 ### Sync Process Flow
 ![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/5-sync-process-flow)
 
+## To Do
+- Product Mapping: Filter and search
+- Product Mapping: Unset product mapping
+- Sync History: Search
+- Sync History: Date filter
+- Sync History: Bulk actions (run sync, delete, delete all)
+- API: Improve notes for errors returned from Jurnal API
+- Minimum WooCommerce / WordPress version required validation
+- Submit to Plugins directory
+
 ## Changes Log
+### 3.2.0
+- New: filter status in Sync History
+- Update: add input sanitazations
 ### 3.1.0
 - New: Calculate tax using WooCommerce Tax setting
 - Update: Only show enabled payments in account mapping
@@ -67,11 +80,3 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 - Remove cron functions (fixed bug pending sync logs)
 - Add new function to add metadata to order
 - Optimize and refactor almost 80% of overall sync process
-
-## To Do
-- Filter and search function in log page
-- Filter and search function in product mapping page
-- Bulk actions for sync log ( run sync, delete)
-- Unset product mapping
-- Add custom value for calculate tax function
-- Improve notes for errors returned from Jurnal API

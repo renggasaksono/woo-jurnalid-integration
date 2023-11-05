@@ -151,4 +151,10 @@ jQuery(function($){
 		}
 	});
 
+	// Submit form on sync_status filter changed
+	$('#sync_status').on( "change", function() {
+		var filter = $(this).val();
+		document.location.href = 'admin.php?page=wji_settings&tab=order_options&sync_status='+filter;
+	});
+
 });

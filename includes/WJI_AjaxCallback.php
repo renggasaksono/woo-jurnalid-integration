@@ -70,8 +70,8 @@ class WJI_AjaxCallback {
 
 		// Set params
 		$params = [];
-		$params['page'] = isset($_GET['page']) ? $_GET['page'] : 1;
-		$params['q'] = isset($_GET['q']) ? $_GET['q'] : '';
+		$params['page'] = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : 1;
+		$params['q'] = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
 		// write_log($params);
 
 		// Iniate API class

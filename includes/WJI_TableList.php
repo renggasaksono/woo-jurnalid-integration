@@ -229,5 +229,35 @@ class WJI_TableList extends WP_List_Table {
 		}
 		return '';
 	}
+
+	/**
+	 * Add extra markup in the toolbars before or after the list
+	 * @param string $which, helps you decide if you add the markup after (bottom) or before (top) the list
+	 */
+	public function extra_tablenav($which){
+
+		// Search function reference: https://gist.github.com/wturnerharris/7413971
+		// Bulk action reference: https://wordpress.stackexchange.com/questions/364447/passing-search-query-and-custom-filter-to-wp-list-table-grid
+
+		// Only show in sync history tab
+		if( isset($_GET['tab']) && sanitize_text_field($_GET['tab']) !== 'order_options' ) {
+			return;
+		}
+
+		$filter_status = isset($_GET['sync_status']) ? sanitize_text_field( $_GET['sync_status'] ) : '';
+	
+		// Display on the top of table
+		if( $which == "top" ) {?>
+			<div class="alignleft actions bulkactions">
+				<select name="sync_status" id="sync_status">
+					<option value="">All status</option>
+					<option value="SYNCED" 	<?php echo $filter_status == 'SYNCED'  ? ' selected' : '' ?>>Success</option>
+					<option value="PENDING" <?php echo $filter_status == 'PENDING' ? ' selected' : '' ?>>Pending</option>
+					<option value="ERROR" 	<?php echo $filter_status == 'ERROR'   ? ' selected' : '' ?>>Failed</option>
+				</select>
+			</div>
+			<?php
+		}
+	}
 }
 ?>
