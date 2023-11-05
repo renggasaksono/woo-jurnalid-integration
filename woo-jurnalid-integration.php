@@ -61,6 +61,10 @@ function wji_deactivate() {
     delete_transient( 'wji_cached_journal_products' );
     delete_transient( 'wji_cached_journal_account' );
     delete_transient( 'wji_cached_journal_warehouses' );
+
+    // Debug purpose, delete plugin options
+    // delete_option('wji_plugin_general_options');
+    // delete_option('wji_account_mapping_options');
 }
 
 /* ------------------------------------------------------------------------ *
@@ -213,7 +217,7 @@ function wji_initialize_general_options() {
     // Create the settings
     add_settings_field( 
         'api_key',                          // ID used to identify the field throughout the theme
-        'API Key',                          // The label to the left of the option interface element
+        'Jurnal.ID API Key',                // The label to the left of the option interface element
         'wji_api_key_callback',             // The name of the function responsible for rendering the option interface
         'wji_plugin_general_options',       // The page on which this option will be displayed
         'general_settings_section'          // The name of the section to which this field belongs
@@ -221,7 +225,7 @@ function wji_initialize_general_options() {
 
     add_settings_field( 
         'include_tax',                      // ID used to identify the field throughout the theme
-        'Kalkulasi Nilai Pajak',            // The label to the left of the option interface element
+        'Sinkronisasi Pajak',               // The label to the left of the option interface element
         'wji_include_tax_callback',         // The name of the function responsible for rendering the option interface
         'wji_plugin_general_options',       // The page on which this option will be displayed
         'general_settings_section'          // The name of the section to which this field belongs
@@ -237,7 +241,7 @@ function wji_initialize_general_options() {
 
     add_settings_field( 
         'wh_id',                            // ID used to identify the field throughout the theme
-        'Gudang',                           // The label to the left of the option interface element
+        'Warehouse',                        // The label to the left of the option interface element
         'wji_wh_id_callback',               // The name of the function responsible for rendering the option interface
         'wji_plugin_general_options',       // The page on which this option will be displayed
         'stock_settings_section'            // The name of the section to which this field belongs
@@ -293,16 +297,16 @@ function wji_initialize_account_mapping_section() {
 
     /** PAYMENT ACCOUNTS **/
 
-    // Get existing wc payment methods
-    $gateways = WC()->payment_gateways->payment_gateways();
+    // Get active woocommerce payment methods
+    $gateways = WC()->payment_gateways->get_available_payment_gateways();
     if(count($gateways) > 0) {
 
         // Register a section
         add_settings_section(
-            'account_mapping_section',          // ID used to identify this section and with which to register options
-            'Payment Account',                  // Title to be displayed on the administration page
-            'wji_account_mapping_callback',     // Callback used to render the description of the section
-            'wji_plugin_account_options'        // Page on which to add this section of options
+            'account_mapping_section',              // ID used to identify this section and with which to register options
+            'WooCommerce Enabled Payments',         // Title to be displayed on the administration page
+            'wji_account_mapping_callback',         // Callback used to render the description of the section
+            'wji_plugin_account_options'            // Page on which to add this section of options
         );
 
         foreach ($gateways as $gateway) {
@@ -312,7 +316,7 @@ function wji_initialize_account_mapping_section() {
             // Create the settings
             add_settings_field( 
                 'acc_payment_'.$id,                         // ID used to identify the field throughout the theme
-                $title.' Account ',                         // The label to the left of the option interface element
+                $title,                                     // The label to the left of the option interface element
                 'wji_dynamic_payment_account_callback',     // The name of the function responsible for rendering the option interface
                 'wji_plugin_account_options',               // The page on which this option will be displayed
                 'account_mapping_section',                  // The name of the section to which this field belongs
@@ -474,11 +478,11 @@ function wji_order_sync_callback() {
     $tablelist->setDatas($products);
     $tablelist->setColumns([
         'id'                => '#',
-        'wc_order_id'       => 'Order ID',
+        'wc_order_id'       => 'Order',
         'sync_action'       => 'Task',
         'sync_status'       => 'Status',
-        'sync_note'         => 'Pesan',
-        'sync_at'           => 'Tanggal'
+        'sync_note'         => 'Message',
+        'sync_at'           => 'Date'
     ]);
     
     $tablelist->generate();
@@ -543,7 +547,7 @@ function wji_include_tax_callback($args) {
         $get_options[$field_name] = '';
     }
     $html = '<input type="checkbox" name="wji_plugin_general_options['.$field_name.']" value="1"' . checked( 1, $get_options['include_tax'], false ) . '/>';
-    $html .= '<label for="include_tax">Harga produk sudah termasuk 10% pajak</label>';
+    $html .= '<label for="include_tax">Aktifkan sinkronisasi akun pajak</label>';
     echo $html;
 }
 
@@ -554,7 +558,7 @@ function wji_sync_stock_callback($args) {
         $get_options[$field_name] = '';
     }
     $html = '<input type="checkbox" name="wji_plugin_general_options['.$field_name.']" value="1"' . checked( 1, $get_options[$field_name], false ) . '/>';
-    $html .= '<label for="sync_stock">Aktifkan sinkronisasi stok produk ketika status Order = Processing</label>';
+    $html .= '<label for="sync_stock">Aktifkan sinkronisasi stok produk</label>';
     echo $html;
 }
 
@@ -926,6 +930,11 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
         $data = $api->get_unpaid_sync_data( $order );
     }
 
+    // Verify data
+    if( ! $data ) {
+        return false;
+    }
+
     // Check if order meta exists
     if( $journal_entry_id = get_post_meta( $order->get_id(), $api->getMetaKey(), true )  ) {
         
@@ -952,7 +961,7 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
         $sync_data['jurnal_entry_id']   = $do_sync->journal_entry->id;
         $sync_data['sync_data']         = json_encode( $data );
         $sync_data['sync_status']       = 'SYNCED';
-        $sync_data['sync_note']         = NULL;
+        $sync_data['sync_note']         = '';
         $sync_data['sync_at']           = date("Y-m-d H:i:s");
 
         // Update post order metadata
@@ -995,7 +1004,7 @@ function wji_desync_journal_entry( int $sync_id, int $order_id ) {
 
             return $wpdb->update( $api->getSyncTableName(), [
                     'sync_status'   => 'SYNCED',
-                    'sync_note'     => NULL,
+                    'sync_note'     => '',
                     'sync_action'   => 'JE_DELETE',
                     'sync_at'       => date("Y-m-d H:i:s")
                 ],
@@ -1031,6 +1040,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
     $get_warehouse = $get_general_options['wh_id'];
     $sync_note = 'Product mapping tidak tersedia: ';
 
+    // Verify warehouse
     if( empty($get_warehouse) ) {
         // Return error immediately
         return $wpdb->update($api->getSyncTableName(), [
@@ -1039,6 +1049,11 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
             ],
             [ 'id' => $sync_id ]
         );
+    }
+
+    // Verify account mapping
+    if( ! isset($get_account_options['acc_stock_adjustments']) ) {
+        return false;
     }
     
     $data = array(
@@ -1093,6 +1108,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
                     'stock_adj_id'  => $postStockAdjustments->stock_adjustment->id,
                     'sync_data'     => json_encode( $data ),
                     'sync_status'   => 'SYNCED',
+                    'sync_note'     => '',
                     'sync_at'       => date("Y-m-d H:i:s")
                 ],
                 [ 'id' => $sync_id ]
@@ -1147,6 +1163,7 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
             return $wpdb->update( $api->getSyncTableName(), [
                     'sync_status'   => 'SYNCED',
                     'sync_action'   => 'SA_DELETE',
+                    'sync_note'     => '',
                     'sync_at'       => date("Y-m-d H:i:s")
                 ],
                 [ 'id' => $sync_id ]

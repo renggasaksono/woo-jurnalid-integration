@@ -41,6 +41,15 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 ![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/5-sync-process-flow)
 
 ## Changes Log
+### 3.1.0
+- New: Calculate tax using WooCommerce Tax setting
+- Update: Only show enabled payments in account mapping
+- Update: Simplify table headers
+- Update: Add validations in several functions
+- Delete: Link to order page in log table
+### 3.0.0
+- New: Product mapping using API Select2 resources
+- Update: Remove unused jurnal product count setting
 ### 2.4.0
 - Update: Add wpnonce validation to retry sync function
 ### 2.3.0

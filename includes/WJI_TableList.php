@@ -97,9 +97,9 @@ class WJI_TableList extends WP_List_Table {
 		$sku = $p->get_sku();
 		if( ( $pf = wp_get_post_parent_id( $p->get_id() ) ) !== 0) {
 			return '<i>(Variation)</i> ' . ($sku ? esc_html($sku).' - ' : '').esc_html($p->get_name());
-		} else {
-			return ($sku ? esc_html($sku).' - ' : '').esc_html($p->get_name());	
 		}
+		
+		return ($sku ? esc_html($sku).' - ' : '').esc_html($p->get_name());	
 	}
 
 	public function column_jurnal_item_code($item) {
@@ -120,7 +120,7 @@ class WJI_TableList extends WP_List_Table {
 	}
 
 	public function column_wc_order_id($item) {
-		return '<a href="'.get_edit_post_link($item->wc_order_id).'" title="View order">'.esc_html($item->wc_order_id).'</a>';
+		return '#'.esc_html($item->wc_order_id);
 	}
 
 	public function column_jurnal_entry_id($item) {
@@ -218,9 +218,9 @@ class WJI_TableList extends WP_List_Table {
 					$link = 'danger';
 			}
 			return $message;
-		} else {
-			return $item->sync_note;
 		}
+		
+		return $item->sync_note;
 	}
 
 	public function column_sync_at($item) {

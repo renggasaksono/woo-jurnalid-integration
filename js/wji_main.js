@@ -99,7 +99,7 @@ jQuery(function($){
       	width : '200px'
 	});
 
-	// Deprecated function for reference
+	// Deprecated function as of 3.0.0
 	let s2_wh = $('#bc-wh-select2').select2({
   		ajax: {
 			url: ajaxurl, // AJAX URL is predefined in WordPress admin
@@ -128,14 +128,14 @@ jQuery(function($){
 		// tags: true,
 	});
 
-	// Deprecated function for reference
+	// Deprecated function as of 3.0.0
 	$('#bc-wh-select2').on('select2:select', function(s2) {
 		let data = s2.params.data;
 		let hidden = "<input type='hidden' name='bc-wh-value["+data.id+"]' value='"+data.text+"'/>";
 		$(this).after(hidden);
 	});
 
-	// Deprecated function for reference
+	// Deprecated function as of 3.0.0
 	$('#bc-wh-select2').on('select2:unselect', function(s2) {
 		let data = s2.params.data;
 		let actualData = $('#bc-wh-select2').select2('data');

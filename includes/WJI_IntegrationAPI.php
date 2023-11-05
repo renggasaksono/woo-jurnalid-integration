@@ -275,14 +275,14 @@ class WJI_IntegrationAPI {
 
 		if(is_array($response)) {
 			$data = json_decode($response['body']);
-	 		return $data->account->name;
+			return isset($data->account->name) ? $data->account->name : false;
 		}
 		else {
 			return $response;
 		}
 	}
 
-	// Deprecated function for reference
+	// Deprecated function as of 3.0.0
 	public function getJournalProducts() {
 		// Check cached data exists
 		// write_log( get_transient( 'wji_cached_journal_products' ) );
@@ -312,12 +312,15 @@ class WJI_IntegrationAPI {
 		$general_options = get_option('wji_plugin_general_options');
 		$accounts = array();
 
+		// Verify account mapping
+		if( ! isset($get_options['acc_payment_'.$order->get_payment_method()]) || ! isset($get_options['acc_tax']) || ! isset($get_options['acc_sales']) ) {
+			return false;
+		}
+
 		// Set tax accounts if enable in options
 		if( $general_options['include_tax'] ) {
 
-			$order_tax = round($order->get_total() * 0.1);
-			$order_total_after_tax = $order->get_total() - $order_tax;
-
+			// Reference https://woocommerce.github.io/code-reference/classes/WC-Abstract-Order.html#method_get_total
 			$accounts = [
 				[
 					"account_name" => $this->getJurnalAccountName( $get_options['acc_payment_'.$order->get_payment_method()] ),
@@ -325,11 +328,11 @@ class WJI_IntegrationAPI {
 				],
 				[
 					"account_name" => $this->getJurnalAccountName( $get_options['acc_tax'] ),
-					"credit" => $order_tax,
+					"credit" => $order->get_total_tax(),
 				],
 				[
 					"account_name" => $this->getJurnalAccountName( $get_options['acc_sales'] ),
-					"credit" => $order_total_after_tax,
+					"credit" => $order->get_total() - $order->get_total_tax(),
 				]
 			];
 
@@ -345,7 +348,6 @@ class WJI_IntegrationAPI {
 					"credit" => $order->get_total(),
 				]
 			];
-
 		}
 
 		return array(
@@ -366,6 +368,11 @@ class WJI_IntegrationAPI {
 	public function get_unpaid_sync_data( $order ) {
 
 		$get_options = get_option('wji_account_mapping_options');
+
+		// Verify account mapping
+		if( ! $get_options['acc_receivable'] || ! $get_options['acc_sales'] ) {
+			return false;
+		}
 
 		return array(
 			"journal_entry" => array(
