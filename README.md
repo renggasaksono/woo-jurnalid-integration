@@ -51,6 +51,9 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 - Submit to Plugins directory
 
 ## Changes Log
+### 3.2.1
+- Update: Upgrade Select2 latest version
+- Update: Revert to show all  payments in Account Mapping
 ### 3.2.0
 - New: filter status in Sync History
 - Update: add input sanitazations
