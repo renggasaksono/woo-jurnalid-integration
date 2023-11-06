@@ -297,14 +297,14 @@ function wji_initialize_account_mapping_section() {
 
     /** PAYMENT ACCOUNTS **/
 
-    // Get active woocommerce payment methods
-    $gateways = WC()->payment_gateways->get_available_payment_gateways();
+    // Get existing wc payment methods
+    $gateways = WC()->payment_gateways->payment_gateways();
     if(count($gateways) > 0) {
 
         // Register a section
         add_settings_section(
             'account_mapping_section',              // ID used to identify this section and with which to register options
-            'WooCommerce Enabled Payments',         // Title to be displayed on the administration page
+            'Payment Account',                     // Title to be displayed on the administration page
             'wji_account_mapping_callback',         // Callback used to render the description of the section
             'wji_plugin_account_options'            // Page on which to add this section of options
         );
