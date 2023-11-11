@@ -316,6 +316,11 @@ class WJI_IntegrationAPI {
 			return false;
 		}
 
+		// Verify order amount
+		if( $order->get_total == 0 ) {
+			return false;
+		}
+
 		// Set tax accounts if enable in options
 		if( $general_options['include_tax'] ) {
 
@@ -370,6 +375,11 @@ class WJI_IntegrationAPI {
 
 		// Verify account mapping
 		if( ! $get_options['acc_receivable'] || ! $get_options['acc_sales'] ) {
+			return false;
+		}
+
+		// Verify order amount
+		if( $order->get_total == 0 ) {
 			return false;
 		}
 

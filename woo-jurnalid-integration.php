@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           3.2.3
+ * Version:           3.2.4
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://id.linkedin.com/in/renggasaksono
