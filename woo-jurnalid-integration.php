@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           3.2.2
+ * Version:           3.2.3
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://id.linkedin.com/in/renggasaksono
@@ -76,7 +76,7 @@ function wji_deactivate() {
  */
 function wji_create_settings_menu() {
     $plugin_page = add_options_page(
-        'Pengaturan Integrasi WooCommerce dan Jurnal.ID', //Page Title
+        'WooCommerce Jurnal.ID Integration', //Page Title
         'WooCommerce Jurnal.ID Integration', //Menu Title
         'manage_woocommerce', //Capability
         'wji_settings', //Page slug
@@ -976,7 +976,7 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
         // Failed
         $sync_data['sync_status']       = 'ERROR';
         $sync_data['sync_data']         = json_encode( $data );
-        $sync_data['sync_note']         = json_encode( $do_sync );
+        $sync_data['sync_note']         = $api->getErrorMessages( $do_sync );
     }
 
     // Update sync log
@@ -1019,7 +1019,7 @@ function wji_desync_journal_entry( int $sync_id, int $order_id ) {
             return $wpdb->update( $api->getSyncTableName(), [
                     'sync_status'   => 'ERROR',
                     'sync_action'   => 'JE_DELETE',
-                    'sync_note'     => json_encode( $deleteEntryResponse )
+                    'sync_note'     => $api->getErrorMessages( $deleteEntryResponse )
                 ],
                 [ 'id' => $sync_id ]
             );
@@ -1149,7 +1149,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
             return $wpdb->update( $api->getSyncTableName(), [
                     'sync_data'     => json_encode( $data ),
                     'sync_status'   => 'ERROR',
-                    'sync_note'     => json_encode( $postStockAdjustments )
+                    'sync_note'     => $api->getErrorMessages( $postStockAdjustments )
                 ],
                 [ 'id' => $sync_id ]
             );
@@ -1203,7 +1203,7 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
 
             return $wpdb->update( $api->getSyncTableName(), [
                     'sync_status'   => 'ERROR',
-                    'sync_note'     => json_encode( $deleteEntryResponse )
+                    'sync_note'     => $api->getErrorMessages( $deleteEntryResponse )
                 ],
                 [ 'id' => $sync_id ]
             );

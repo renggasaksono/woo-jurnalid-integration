@@ -220,7 +220,7 @@ class WJI_IntegrationAPI {
 
 		if(is_array($response)) {
 			$data = json_decode($response['body']);
-	 		return $data->product->name;
+			return isset($data->product) ? $data->product->name : null;
 		}
 		
 		return null;
@@ -394,6 +394,18 @@ class WJI_IntegrationAPI {
 				]
 			)
 		);
+	}
+
+	public function getErrorMessages( $response ) {
+
+		if( isset($response->errors) ) {
+			$message = json_encode($response->errors);
+		} elseif( isset($response->error_full_messages) ) {
+			$message = implode(',',$response->error_full_messages);
+		} else {
+			$message = '';
+		}
+		return trim($message,'"');
 	}
 	
 }

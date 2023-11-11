@@ -46,12 +46,13 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 - Sync History: Search
 - Sync History: Date filter
 - Sync History: Bulk actions (run sync, delete, delete all)
-- API: Improve notes for errors returned from Jurnal API
 - Minimum WooCommerce / WordPress version required validation
 - Submit to Plugins directory
 - WordPress Multisite support
 
 ## Changes Log
+### 3.2.3
+- Update: Optimize API sync error messages
 ### 3.2.2
 - Update: fix bug product mapping pagination
 - Update: optimize retry sync process
