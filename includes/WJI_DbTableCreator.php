@@ -23,7 +23,10 @@ class WJI_DbTableCreator {
 		dbDelta( $query );
 
 		// initiation fill the existed product
-		$wooproduct = wc_get_products(['limit' => -1]);
+		$wooproduct = wc_get_products([
+			'limit'		=> -1, // All products
+			'status'	=> 'publish' // Only published products
+		]);
 		foreach ($wooproduct as $product) {
 			$id = $product->get_id();
 			$data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$id}");

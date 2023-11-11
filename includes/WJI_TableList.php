@@ -74,9 +74,12 @@ class WJI_TableList extends WP_List_Table {
 			
 			if( in_array( $item->sync_status, (array) $retry_statuses ) ) {
 				
+				$paged = isset( $_GET[ 'paged' ] ) ? sanitize_text_field($_GET[ 'paged' ]) : '0';
+
 				// Generate safe links
-				$url = sprintf('options-general.php?page=wji_settings&tab=order_options&_syncid=%s',
-					$item->id
+				$url = sprintf('options-general.php?page=wji_settings&tab=order_options&_syncid=%s&paged=%d',
+					$item->id,
+					$paged
 				);
 				
 				$nonce_url = add_query_arg( '_wjinonce', wp_create_nonce( 'retry_sync' ), $url );

@@ -49,8 +49,14 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 - API: Improve notes for errors returned from Jurnal API
 - Minimum WooCommerce / WordPress version required validation
 - Submit to Plugins directory
+- WordPress Multisite support
 
 ## Changes Log
+### 3.2.2
+- Update: fix bug product mapping pagination
+- Update: optimize retry sync process
+- Update: fix bug sync duplicate product mapping
+- Update: filter only publish products on table creation
 ### 3.2.1
 - Update: Upgrade Select2 latest version
 - Update: Revert to show all  payments in Account Mapping

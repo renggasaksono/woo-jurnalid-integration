@@ -222,9 +222,8 @@ class WJI_IntegrationAPI {
 			$data = json_decode($response['body']);
 	 		return $data->product->name;
 		}
-		else {
-			return $response;
-		}
+		
+		return null;
 	}
 
 	public function checkApiKeyValid() {

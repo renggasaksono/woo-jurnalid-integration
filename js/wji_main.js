@@ -3,13 +3,11 @@ jQuery(function($){
 	// Show product mapping option on click
 	$('.bc-editable-link').click(function() {
 		jQuery(this).addClass('hidden').siblings('.bc-editable-input').removeClass('hidden');
-		return false;
 	});
 
 	// Hide product mapping option on click
 	$('.bc-editable-cancel').click(function() {
 		jQuery(this).parent('.bc-editable-input').addClass('hidden').siblings('.bc-editable-link').removeClass('hidden');
-		return false;
 	});
 
 	// Select2 product mapping
@@ -83,7 +81,6 @@ jQuery(function($){
 		else {
 			alert('Item Jurnal.ID harus diisi');
 		}
-		return false;
 	});
 
 	// Account mapping
