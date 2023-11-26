@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           3.2.4
+ * Version:           3.2.5
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://id.linkedin.com/in/renggasaksono
@@ -737,7 +737,7 @@ function wji_run_sync_process( $order_id ) {
     $options = get_option('wji_plugin_general_options');
 
     // Validate apakah sudah pernah sync
-    $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_UPDATE"';
+    $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND (sync_action="JE_CREATE" OR sync_action="JE_UPDATE")';
     $get_order_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$order_sync_where}");
 
     if( ! $get_order_sync ) {
@@ -749,10 +749,8 @@ function wji_run_sync_process( $order_id ) {
             'sync_status' => 'PENDING'
         ]);
 
-        $sync_journal_entry_id = $wpdb->insert_id;
-
         // Run sync process
-        $sync_journal_entry_result = wji_sync_journal_entry( $sync_journal_entry_id, $order_id );
+        $sync_journal_entry_result = wji_sync_journal_entry( $wpdb->insert_id, $order_id );
     }
     
 
@@ -771,11 +769,9 @@ function wji_run_sync_process( $order_id ) {
                 'sync_action' => 'SA_CREATE',
                 'sync_status' => 'PENDING'
             ]);
-    
-            $sync_stock_adjustment_id = $wpdb->insert_id;
-    
+
             // Run sync process
-            $sync_stock_adjustment_result = wji_sync_stock_adjustment( $sync_stock_adjustment_id, $order_id );
+            $sync_stock_adjustment_result = wji_sync_stock_adjustment( $wpdb->insert_id, $order_id );
         }
     }
 }
@@ -1244,11 +1240,11 @@ function wji_enqueue_scripts(){
 if (!function_exists('write_log')) {
     function write_log ( $log )  {
         if ( true === WP_DEBUG ) {
-            $pluginlog = plugin_dir_path(__FILE__).'debug.log';
+            // $pluginlog = plugin_dir_path(__FILE__).'debug.log';
             if ( is_array( $log ) || is_object( $log ) ) {
-                error_log( print_r( $log, true ).PHP_EOL, 3, $pluginlog );
+                error_log( print_r( $log, true ).PHP_EOL );
             } else {
-                error_log( $log.PHP_EOL, 3, $pluginlog );
+                error_log( $log.PHP_EOL );
             }
         }
     }

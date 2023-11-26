@@ -51,6 +51,9 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 - WordPress Multisite support
 
 ## Changes Log
+### 3.2.5
+- Update: Fix multiple sync log created
+- Update: Fix incorrect get_total function
 ### 3.2.4
 - Update: Validate wc order total
 ### 3.2.3

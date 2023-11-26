@@ -317,7 +317,7 @@ class WJI_IntegrationAPI {
 		}
 
 		// Verify order amount
-		if( $order->get_total == 0 ) {
+		if( $order->get_total() == 0 ) {
 			return false;
 		}
 
@@ -379,7 +379,7 @@ class WJI_IntegrationAPI {
 		}
 
 		// Verify order amount
-		if( $order->get_total == 0 ) {
+		if( $order->get_total() == 0 ) {
 			return false;
 		}
 
