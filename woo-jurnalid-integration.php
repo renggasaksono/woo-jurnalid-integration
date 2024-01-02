@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           3.2.5
+ * Version:           3.2.6
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://id.linkedin.com/in/renggasaksono
@@ -737,20 +737,27 @@ function wji_run_sync_process( $order_id ) {
     $options = get_option('wji_plugin_general_options');
 
     // Validate apakah sudah pernah sync
-    $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND (sync_action="JE_CREATE" OR sync_action="JE_UPDATE")';
+    $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_UPDATE"';
     $get_order_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$order_sync_where}");
 
     if( ! $get_order_sync ) {
 
-        // 1. Sync journal entry
-        $sync_journal_entry = $wpdb->insert( $api->getSyncTableName(), [
-            'wc_order_id' => $order_id,
-            'sync_action' => 'JE_CREATE',
-            'sync_status' => 'PENDING'
-        ]);
+        // Validate apakah sudah ada existing task (prevent duplicate)
+        $existing_taks_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_CREATE"';
+        $get_existing_task_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$existing_taks_where}");
 
-        // Run sync process
-        $sync_journal_entry_result = wji_sync_journal_entry( $wpdb->insert_id, $order_id );
+        if( ! $get_existing_task_sync ) {
+            
+            // 1. Sync journal entry
+            $sync_journal_entry = $wpdb->insert( $api->getSyncTableName(), [
+                'wc_order_id' => $order_id,
+                'sync_action' => 'JE_CREATE',
+                'sync_status' => 'PENDING'
+            ]);
+
+            // Run sync process
+            $sync_journal_entry_result = wji_sync_journal_entry( $wpdb->insert_id, $order_id );
+        }
     }
     
 
