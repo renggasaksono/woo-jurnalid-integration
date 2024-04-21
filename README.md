@@ -51,6 +51,12 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 - WordPress Multisite support
 
 ## Changes Log
+### 4.0.0
+- Major update improve sync flow to be more efficient
+- New: New format data for Payment received in previously unpaid order
+- Update: Fix incorrect total products in product mapping table
+### 3.2.6
+- Update: Fix bug sync not running after payment received
 ### 3.2.5
 - Update: Fix multiple sync log created
 - Update: Fix incorrect get_total function

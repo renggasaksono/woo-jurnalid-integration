@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           3.2.6
+ * Version:           4.0.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://id.linkedin.com/in/renggasaksono
@@ -412,7 +412,7 @@ function wji_product_mapping_callback() {
     $where = '';
 
     $products = $wpdb->get_results("select wjpm.* from {$table_name} wjpm join {$table_post} p on wjpm.wc_item_id=p.id {$where} order by id limit {$tablelist->getPerpage()} offset {$offset}");
-    $count = $wpdb->get_var("select wjpm.* from {$table_name} wjpm join {$table_post} p on wjpm.wc_item_id=p.id {$where}");
+    $count = $wpdb->get_var("select count(*) from {$table_name} wjpm join {$table_post} p on wjpm.wc_item_id=p.id {$where}");
 
     $tablelist->setTotalItem($count);
     $tablelist->setDatas($products);
@@ -452,9 +452,9 @@ function wji_order_sync_callback() {
             // Run sync process
             switch ( $sync_action ) {
                 case "JE_CREATE":
-                    wji_sync_journal_entry( (int) $sync_id, (int) $order_id );
-                    break;
                 case "JE_UPDATE":
+                case 'JE_PAID':
+                case 'JE_UNPAID':
                     wji_sync_journal_entry( (int) $sync_id, (int) $order_id );
                     break;
                 case "SA_CREATE":
@@ -736,30 +736,47 @@ function wji_run_sync_process( $order_id ) {
     $api = new WJI_IntegrationAPI();
     $options = get_option('wji_plugin_general_options');
 
-    // Validate apakah sudah pernah sync
-    $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_UPDATE"';
-    $get_order_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$order_sync_where}");
+    // Check if order is paid
+    $order = wc_get_order( $order_id );
 
-    if( ! $get_order_sync ) {
+    if( $order->is_paid() ) {
+        
+        // Validate apakah sudah pernah sync
+        $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_PAID"';
+        $get_order_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$order_sync_where}");
+        
+        if( ! $get_order_sync ) {
 
-        // Validate apakah sudah ada existing task (prevent duplicate)
-        $existing_taks_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_CREATE"';
-        $get_existing_task_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$existing_taks_where}");
-
-        if( ! $get_existing_task_sync ) {
-            
-            // 1. Sync journal entry
-            $sync_journal_entry = $wpdb->insert( $api->getSyncTableName(), [
+            // Create new sync action
+            $wpdb->insert( $api->getSyncTableName(), [
                 'wc_order_id' => $order_id,
-                'sync_action' => 'JE_CREATE',
+                'sync_action' => 'JE_PAID',
                 'sync_status' => 'PENDING'
             ]);
 
             // Run sync process
-            $sync_journal_entry_result = wji_sync_journal_entry( $wpdb->insert_id, $order_id );
+            wji_sync_journal_entry( $wpdb->insert_id, $order_id );
         }
-    }
-    
+
+    } else {
+        
+        // Validate apakah sudah pernah sync
+        $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_UNPAID"';
+        $get_order_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$order_sync_where}");
+        
+        if( ! $get_order_sync ) {
+
+            // Create new sync action
+            $wpdb->insert( $api->getSyncTableName(), [
+                'wc_order_id' => $order_id,
+                'sync_action' => 'JE_UNPAID',
+                'sync_status' => 'PENDING'
+            ]);
+
+            // Run sync process
+            wji_sync_journal_entry( $wpdb->insert_id, $order_id );
+        }
+    }  
 
     // 2. Sync stock adjustment if enabled
     if( isset($options['sync_stock']) ) {
@@ -771,14 +788,14 @@ function wji_run_sync_process( $order_id ) {
         if( ! $get_stock_sync ) {
             
             // Add new sync record if haven't synced yet
-            $sync_stock_adjustment = $wpdb->insert( $api->getSyncTableName(), [
+            $wpdb->insert( $api->getSyncTableName(), [
                 'wc_order_id' => $order_id,
                 'sync_action' => 'SA_CREATE',
                 'sync_status' => 'PENDING'
             ]);
 
             // Run sync process
-            $sync_stock_adjustment_result = wji_sync_stock_adjustment( $wpdb->insert_id, $order_id );
+            wji_sync_stock_adjustment( $wpdb->insert_id, $order_id );
         }
     }
 }
@@ -924,43 +941,38 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
     
     $api = new WJI_IntegrationAPI();
     $order = wc_get_order( $order_id );
-    $get_options = get_option('wji_account_mapping_options');
     $data = [];
-    $sync_jurnal_entry_id = false;
     $sync_data = [];
     $do_sync = false;
-    
-    // Check if order is paid
-    if( $order->is_paid() ) {
-        $data = $api->get_paid_sync_data( $order );
-    } else {
+
+    // Get sync data
+    $get_sync_data = $wpdb->get_row(
+        $wpdb->prepare( "SELECT * from {$api->getSyncTableName()} where id = %d",
+            $sync_id
+        )
+    );
+
+    // Create data format for sync
+    if( $get_sync_data->sync_action == 'JE_PAID' ) {
+
+        // Validate if previous UNPAID journal entry has been created, we need to format the data to reverse and balance the previous record
+        if( ! get_post_meta( $order->get_id(), $api->getUnpaidMetaKey(), true )  ) {
+            $data = $api->get_paid_sync_data( $order );
+        } else {
+            $data = $api->get_payment_sync_data( $order );
+        }
+
+    } elseif( $get_sync_data->sync_action == 'JE_UNPAID' ) {
         $data = $api->get_unpaid_sync_data( $order );
     }
 
     // Verify data
-    if( ! $data ) {
+    if( empty($data) ) {
         return false;
     }
 
-    // Check if order meta exists
-    if( $journal_entry_id = get_post_meta( $order->get_id(), $api->getMetaKey(), true )  ) {
-        
-        // Validate apakah sudah pernah sync
-        $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_UPDATE"';
-        $get_order_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$order_sync_where}");
-
-        if( ! $get_order_sync ) {
-
-            // Update existing journal entry
-            $do_sync = $api->patchJournalEntry( $journal_entry_id, $data );
-            $sync_data['sync_action'] = 'JE_UPDATE';
-        }
-    
-    } else {
-        
-        // Create new journal entry
-        $do_sync = $api->postJournalEntry( $data );
-    }
+    // Run sync function
+    $do_sync = $api->postJournalEntry( $data );
 
     if( isset( $do_sync->journal_entry ) ) {
         
@@ -973,6 +985,7 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
 
         // Update post order metadata
         update_post_meta( $order->get_id(), $api->getMetaKey(), $do_sync->journal_entry->id );
+        update_post_meta( $order->get_id(), $api->getUnpaidMetaKey(), $do_sync->journal_entry->id );
 
     } else {
         

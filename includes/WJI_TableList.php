@@ -140,6 +140,8 @@ class WJI_TableList extends WP_List_Table {
 	public function column_sync_action($item) {
 		switch($item->sync_action) {
 			case 'JE_CREATE':
+			case 'JE_PAID':
+			case 'JE_UNPAID':
 				$status = 'Create journal entry';
 				break;
 			case 'JE_UPDATE':
@@ -186,6 +188,8 @@ class WJI_TableList extends WP_List_Table {
 			$message = '';
 			switch($item->sync_action) {
 				case 'JE_CREATE':
+				case 'JE_PAID':
+				case 'JE_UNPAID':
 					if($item->sync_status == 'SYNCED') {
 						$je_id = $item->jurnal_entry_id;
 						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank" title="View on Jurnal.ID">'.$je_id.'</a>';

@@ -82,7 +82,7 @@ class WJI_DbTableCreator {
 				primary key (id)
 			) {$charset};
 		";
-		// sync_action => 'JE_CREATE', 'JE_UPDATE', 'JE_DELETE', 'SA_CREATE', 'SA_DELETE'
+		// sync_action => 'JE_CREATE', 'JE_UPDATE', 'JE_DELETE', 'SA_CREATE', 'SA_DELETE', 'JE_PAID', 'JE_UNPAID'
 		// sync_status => 'PENDING', 'SYNCED', 'ERROR'
 
 		dbDelta( $query );

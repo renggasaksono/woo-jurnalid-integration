@@ -8,6 +8,7 @@ class WJI_IntegrationAPI {
 	private $body;
 	private $meta_key = '_wji_journal_entry_id';
 	private $stock_meta_key = '_wji_stock_adjustment_id';
+	private $unpaid_meta_key = '_wji_journal_entry_unpaid_id';
 
 	public function __construct() {
 		global $wpdb;
@@ -77,6 +78,10 @@ class WJI_IntegrationAPI {
 
 	public function getStockMetaKey() {
 		return $this->stock_meta_key;
+	}
+
+	public function getUnpaidMetaKey() {
+		return $this->unpaid_meta_key;
 	}
 
 	public function getAllJurnalWarehouses() {
@@ -322,7 +327,7 @@ class WJI_IntegrationAPI {
 		}
 
 		// Set tax accounts if enable in options
-		if( $general_options['include_tax'] ) {
+		if( $general_options['include_tax'] == 1 ) {
 
 			// Reference https://woocommerce.github.io/code-reference/classes/WC-Abstract-Order.html#method_get_total
 			$accounts = [
@@ -357,7 +362,7 @@ class WJI_IntegrationAPI {
 		return array(
 			"journal_entry" => array(
 				"transaction_date" => $order->get_date_created()->format( 'Y-m-d' ),
-				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ),
+				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ) . '-PAID',
 				"memo" => 'WooCommerce Order ID: '.$order->get_id(),
 				"transaction_account_lines_attributes" => $accounts,
 				"tags" => [
@@ -372,9 +377,11 @@ class WJI_IntegrationAPI {
 	public function get_unpaid_sync_data( $order ) {
 
 		$get_options = get_option('wji_account_mapping_options');
+		$general_options = get_option('wji_plugin_general_options');
+		$accounts = array();
 
 		// Verify account mapping
-		if( ! $get_options['acc_receivable'] || ! $get_options['acc_sales'] ) {
+		if( ! isset($get_options['acc_receivable']) || ! isset($get_options['acc_sales']) || ! isset($get_options['acc_tax']) ) {
 			return false;
 		}
 
@@ -383,21 +390,84 @@ class WJI_IntegrationAPI {
 			return false;
 		}
 
+		// Set tax accounts if enable in options
+		if( $general_options['include_tax'] == 1 ) {
+
+			$accounts = [
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_receivable'] ),
+					"debit" => $order->get_total(),
+				],
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_tax'] ),
+					"credit" => $order->get_total_tax(),
+				],
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_sales'] ),
+					"credit" => $order->get_total() - $order->get_total_tax(),
+				]
+			];
+
+		} else {
+
+			$accounts = [
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_receivable'] ),
+					"debit" => $order->get_total(),
+				],
+				[
+					"account_name" => $this->getJurnalAccountName( $get_options['acc_sales'] ),
+					"credit" => $order->get_total(),
+				]
+			];
+		}
+
 		return array(
 			"journal_entry" => array(
 				"transaction_date" => $order->get_date_created()->format( 'Y-m-d' ),
-				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ),
+				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ). '-UNPAID',
 				"memo" => 'WooCommerce Order ID: '.$order->get_id(),
-				"transaction_account_lines_attributes" => [
-					[
-						"account_name" => $this->getJurnalAccountName( $get_options['acc_receivable'] ),
-						"debit" => $order->get_total(),
-					],
-					[
-						"account_name" => $this->getJurnalAccountName( $get_options['acc_sales'] ),
-						"credit" => $order->get_total(),
-					]
-				],
+				"transaction_account_lines_attributes" => $accounts,
+				"tags" => [
+					'WooCommerce',
+					strtoupper( $order->get_formatted_billing_full_name() )
+				]
+			)
+		);
+	}
+
+	public function get_payment_sync_data( $order ) {
+
+		$get_options = get_option('wji_account_mapping_options');
+		$accounts = array();
+
+		// Verify account mapping
+		if( ! isset($get_options['acc_receivable']) || ! isset($get_options['acc_payment_'.$order->get_payment_method()]) ) {
+			return false;
+		}
+
+		// Verify order amount
+		if( $order->get_total() == 0 ) {
+			return false;
+		}
+
+		$accounts = [
+			[
+				"account_name" => $this->getJurnalAccountName( $get_options['acc_payment_'.$order->get_payment_method()] ),
+				"debit" => $order->get_total(),
+			],
+			[
+				"account_name" => $this->getJurnalAccountName( $get_options['acc_receivable'] ),
+				"credit" => $order->get_total(),
+			],
+		];
+
+		return array(
+			"journal_entry" => array(
+				"transaction_date" => $order->get_date_created()->format( 'Y-m-d' ),
+				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ). '-PAYMENT',
+				"memo" => 'WooCommerce Order ID: '.$order->get_id(),
+				"transaction_account_lines_attributes" => $accounts,
 				"tags" => [
 					'WooCommerce',
 					strtoupper( $order->get_formatted_billing_full_name() )
