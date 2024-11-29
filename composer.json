@@ -11,6 +11,6 @@
         "nesbot/carbon": "^2.54"
     },
     "autoload": {
-        "psr-4": {"Saksono\\Woojurnal\\": "src/"}
+        "psr-4": {"Saksono\\Woojurnal\\": "includes/"}
     }
 }
