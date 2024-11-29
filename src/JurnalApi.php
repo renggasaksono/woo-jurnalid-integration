@@ -6,17 +6,22 @@ use Saksono\Woojurnal\MekariRequest;
 
 class JurnalApi {
 
-	private $meta_key = '_wji_journal_entry_id';
+	private $journal_entry_meta_key = '_wji_journal_entry_id';
 	private $stock_meta_key = '_wji_stock_adjustment_id';
 	private $unpaid_meta_key = '_wji_journal_entry_unpaid_id';
 	private $mekariRequest;
+
+	/**
+	 * Main table used for storing sync data
+	 */
+	private const SYNC_TABLE  = 'wji_order_sync_log';
 
 	public function __construct() {
 		$this->mekariRequest = new MekariRequest;
 	}
 
-	public function getMetaKey() {
-		return $this->meta_key;
+	public function getJournalEntryMetaKey() {
+		return $this->journal_entry_meta_key;
 	}
 
 	public function getStockMetaKey() {
@@ -29,7 +34,7 @@ class JurnalApi {
 
 	public function getSyncTableName() {
 		global $wpdb;
-		return $wpdb->prefix . 'wji_order_sync_log';
+		return $wpdb->prefix . self::SYNC_TABLE;
 	}
 
 	public function checkApiKeyValid() {
@@ -314,7 +319,7 @@ class JurnalApi {
 			"journal_entry" => array(
 				"transaction_date" => $order->get_date_created()->format( 'Y-m-d' ),
 				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ) . '-PAID',
-				"memo" => 'WooCommerce Order ID: '.$order->get_id(),
+				"memo" => get_bloginfo('name').' WooCommerce Order ID: '.$order->get_id(),
 				"transaction_account_lines_attributes" => $accounts,
 				"tags" => [
 					'WooCommerce',
@@ -377,7 +382,7 @@ class JurnalApi {
 			"journal_entry" => array(
 				"transaction_date" => $order->get_date_created()->format( 'Y-m-d' ),
 				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ). '-UNPAID',
-				"memo" => 'WooCommerce Order ID: '.$order->get_id(),
+				"memo" => get_bloginfo('name').' WooCommerce Order ID: '.$order->get_id(),
 				"transaction_account_lines_attributes" => $accounts,
 				"tags" => [
 					'WooCommerce',
@@ -417,7 +422,7 @@ class JurnalApi {
 			"journal_entry" => array(
 				"transaction_date" => $order->get_date_created()->format( 'Y-m-d' ),
 				"transaction_no" => $order->get_id() . '-' . strtoupper( $order->get_formatted_billing_full_name() ). '-PAYMENT',
-				"memo" => 'WooCommerce Order ID: '.$order->get_id(),
+				"memo" => get_bloginfo('name').' WooCommerce Order ID: '.$order->get_id(),
 				"transaction_account_lines_attributes" => $accounts,
 				"tags" => [
 					'WooCommerce',

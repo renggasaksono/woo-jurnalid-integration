@@ -829,7 +829,7 @@ function wji_update_order_cancelled( $order_id ) {
     $api = new \Saksono\Woojurnal\JurnalApi();
     
     // Check if order meta exists
-    if( $journal_entry_id = get_post_meta( $order_id, $api->getMetaKey(), true )  ) {
+    if( $journal_entry_id = get_post_meta( $order_id, $api->getJournalEntryMetaKey(), true )  ) {
 
         // 1. Add delete journal entry sync record
         $wpdb->insert( $api->getSyncTableName(), [
@@ -1001,7 +1001,7 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
         $sync_data['sync_at']           = date("Y-m-d H:i:s");
 
         // Update post order metadata
-        update_post_meta( $order->get_id(), $api->getMetaKey(), $do_sync->journal_entry->id );
+        update_post_meta( $order->get_id(), $api->getJournalEntryMetaKey(), $do_sync->journal_entry->id );
         update_post_meta( $order->get_id(), $api->getUnpaidMetaKey(), $do_sync->journal_entry->id );
 
     } else {
@@ -1029,7 +1029,7 @@ function wji_desync_journal_entry( int $sync_id, int $order_id ) {
     $api = new \Saksono\Woojurnal\JurnalApi();
     
     // Delete journal entry if exists
-    $journal_entry_id = get_post_meta( $order_id, $api->getMetaKey(), true );
+    $journal_entry_id = get_post_meta( $order_id, $api->getJournalEntryMetaKey(), true );
     
     if( $journal_entry_id ) {
 
@@ -1099,7 +1099,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
             "warehouse_id"          => $get_warehouse,
             "account_name"          => $api->getJurnalAccountName( $get_account_options['acc_stock_adjustments'] ),
             "date"                  => date("Y-m-d"),
-            "memo"                  => 'WooCommerce Order ID#'.$order_id,
+            "memo"                  => get_bloginfo('name').' WooCommerce Order ID#'.$order_id,
             "maintain_actual"       => false,
             "lines_attributes"      => []
         )
