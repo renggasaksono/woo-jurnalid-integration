@@ -2,6 +2,8 @@
 
 namespace Saksono\Woojurnal;
 
+defined( 'ABSPATH' ) || exit;
+
 class Helper {
 
 	static function sanitize_int($value) {

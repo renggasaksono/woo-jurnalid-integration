@@ -2,6 +2,8 @@
 
 namespace Saksono\Woojurnal;
 
+defined( 'ABSPATH' ) || exit;
+
 class DbTableCreator {
 
 	function wji_create_product_mapping_table() {

@@ -2,11 +2,9 @@
 
 namespace Saksono\Woojurnal\Admin;
 
-use Saksono\Woojurnal\JurnalApi;
+defined( 'ABSPATH' ) || exit;
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+use Saksono\Woojurnal\JurnalApi;
 
 class SettingsPage {
 

@@ -2,6 +2,8 @@
 
 namespace Saksono\Woojurnal;
 
+defined( 'ABSPATH' ) || exit;
+
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;

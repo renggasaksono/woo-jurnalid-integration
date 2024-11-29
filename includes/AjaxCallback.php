@@ -2,6 +2,8 @@
 
 namespace Saksono\Woojurnal;
 
+defined( 'ABSPATH' ) || exit;
+
 use Saksono\Woojurnal\Helper;
 
 class AjaxCallback {

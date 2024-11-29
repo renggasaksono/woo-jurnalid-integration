@@ -1,18 +1,19 @@
 <?php
 /**
- * Plugin Name:       WooCommerce Jurnal.ID Integration
- * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           5.0.0
- * Requires at least: 5.5
- * Author:            Rengga Saksono
- * Author URI:        https://id.linkedin.com/in/renggasaksono
- * License:           GPL v2 or later
- * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Plugin Name:             WooCommerce Jurnal.ID Integration
+ * Description:             Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
+ * Version:                 5.0.0
+ * Requires at least:       5.5
+ * Author:                  Rengga Saksono
+ * Author URI:              https://id.linkedin.com/in/renggasaksono
+ * License:                 GPL v2 or later
+ * License URI:             https://www.gnu.org/licenses/gpl-2.0.html
+ * WC requires at least:    3.4
+ * WC tested up to:         8.2
+ * Requires Plugins:        woocommerce
  */
 
-if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly.
-}
+defined( 'ABSPATH' ) || exit;
 
 require_once(plugin_dir_path(__FILE__) . '/vendor/autoload.php');
 
@@ -35,19 +36,10 @@ add_action('plugins_loaded', function () {
  */
 register_activation_hook( __FILE__, 'wji_on_activation' );
 function wji_on_activation() {
-    
-    // Checks if WooCommerce active
-    $wc = class_exists( 'WooCommerce' );
-    if(!$wc) {
-        deactivate_plugins( basename( __FILE__ ) );
-        wp_die("Maaf, Plugin WooCommerce tidak ditemukan.");
-    }
-
     // Create db tables
     $tc = new \Saksono\Woojurnal\DbTableCreator();
     $tc->wji_create_product_mapping_table(); // buat table untuk translasi item jurnal dan woo
     $tc->wcbc_create_order_sync_table();
-
 }
 
 /**
@@ -113,7 +105,8 @@ function wji_initialize_account_mapping_section() {
     /** PAYMENT ACCOUNTS **/
 
     // Get existing wc payment methods
-    $gateways = WC()->payment_gateways->payment_gateways();
+    $gateways = function_exists('WC') ? WC()->payment_gateways->payment_gateways() : [];
+
     if(count($gateways) > 0) {
 
         // Register a section
