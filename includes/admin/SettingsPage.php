@@ -12,7 +12,7 @@ class SettingsPage {
 
     public function __construct()
     {
-        add_filter('plugin_action_links', [$this, 'plugin_settings_link', 10, 2]);
+        add_filter('plugin_action_links', [$this, 'plugin_settings_link'], 10, 2);
         add_action('admin_menu', [$this, 'create_settings_menu']);
         add_action('admin_init', [$this, 'initialize_general_options']);
 	}
