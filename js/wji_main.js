@@ -96,58 +96,6 @@ jQuery(function($){
       	width : '200px'
 	});
 
-	// Deprecated function as of 3.0.0
-	let s2_wh = $('#bc-wh-select2').select2({
-  		ajax: {
-			url: ajaxurl, // AJAX URL is predefined in WordPress admin
-			dataType: 'json',
-			delay: 250, // delay in ms while typing when to perform a AJAX search
-			data: function (params) {
-  				return {
-    				q: params.term, // search query
-    				action: 'wcbc_get_wh' // AJAX action for admin-ajax.php
-  				};
-			},
-			error: function (jqXHR, status, error) {
-	            console.log(error + ": " + jqXHR.responseText);
-	            return { results: [] }; // Return dataset to load after error
-	        },
-			processResults: function( data ) {
-				return {
-					results: data
-				};
-			},
-			cache: true
-		},
-		minimumInputLength: 1, // the minimum of symbols to input before perform a search
-		placeholder: 'Semua',
-		allowClear: true,
-		// tags: true,
-	});
-
-	// Deprecated function as of 3.0.0
-	$('#bc-wh-select2').on('select2:select', function(s2) {
-		let data = s2.params.data;
-		let hidden = "<input type='hidden' name='bc-wh-value["+data.id+"]' value='"+data.text+"'/>";
-		$(this).after(hidden);
-	});
-
-	// Deprecated function as of 3.0.0
-	$('#bc-wh-select2').on('select2:unselect', function(s2) {
-		let data = s2.params.data;
-		let actualData = $('#bc-wh-select2').select2('data');
-		let remove = true;
-		for(let i = 0; i < actualData.length; i++) {
-			if(actualData[i].text == data.text) {
-				remove = false;
-				break;
-			}
-		}
-		if(remove) {
-			$('[name="bc-wh-value['+data.id+']"]').remove();
-		}
-	});
-
 	// Submit form on sync_status filter changed
 	$('#sync_status').on( "change", function() {
 		var filter = $(this).val();

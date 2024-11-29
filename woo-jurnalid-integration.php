@@ -439,7 +439,7 @@ function wji_order_sync_callback() {
     // Retry sync function
     if ( isset($_GET['_wjinonce']) || wp_verify_nonce( isset($_GET['_wjinonce']), 'retry_sync' ) || is_numeric( isset($_GET[ '_syncid' ]) ) ) {
         
-        write_log('Retry sync #'.$_GET['_syncid']);
+        write_log('Retry sync initiated ...');
         $sync_id = sanitize_key($_GET['_syncid']);
 
         // Get sync data
@@ -954,7 +954,7 @@ function wji_delete_product( $post_id ) {
  */
 function wji_sync_journal_entry( int $sync_id, int $order_id ) {
     global $wpdb;
-    write_log('Sync jurnal entry #'.$sync_id);
+    write_log('Sync Jurnal Entry running for ID #'.$sync_id);
     
     $api = new \Saksono\Woojurnal\JurnalApi();
     $order = wc_get_order( $order_id );
@@ -1250,10 +1250,9 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
  * WP AJAX Calls
  * ------------------------------------------------------------------------ */
 
-add_action( 'wp_ajax_wji_translasi_item', ['WJI_AjaxCallback', 'wji_item_ajax_callback'] ); // ajax cari item di jurnal
-add_action( 'wp_ajax_wji_translasi_item_save', ['WJI_AjaxCallback', 'wji_save_item_ajax_callback'] ); // ajax save mapping item
-add_action( 'wp_ajax_wji_check_used_item', ['WJI_AjaxCallback', 'wji_check_used_item_ajax_callback'] ); // ajax cek mapping jika sudah digunakan
-add_action( 'wp_ajax_wji_select2_products', ['WJI_AjaxCallback', 'wji_get_jurnal_products_callback'] ); // ajax get select2 products resource
+add_action( 'wp_ajax_wji_translasi_item_save', ['\Saksono\Woojurnal\AjaxCallback', 'wji_save_item_ajax_callback'] ); // ajax save mapping item
+add_action( 'wp_ajax_wji_check_used_item', ['\Saksono\Woojurnal\AjaxCallback', 'wji_check_used_item_ajax_callback'] ); // ajax cek mapping jika sudah digunakan
+add_action( 'wp_ajax_wji_select2_products', ['\Saksono\Woojurnal\AjaxCallback', 'wji_get_jurnal_products_callback'] ); // ajax get select2 products resource
 
 /* ------------------------------------------------------------------------ *
  * Enqueue Plugin Scripts

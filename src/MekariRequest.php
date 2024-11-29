@@ -97,8 +97,8 @@ class MekariRequest {
         } catch (ClientException $e) {
             return [
                 'success' => false,
-                'status_code' => $e->getStatusCode(),
-                'body' => Psr7\Message::toString($e->getResponse())
+                'status_code' => $e->getResponse()->getStatusCode(),
+                'body' => $e->getResponse()->getBody()
             ];
         } catch (\Exception $e) {
             return [

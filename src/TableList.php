@@ -6,11 +6,11 @@ if( ! class_exists( 'WP_List_Table' ) ) {
     require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
 }
 
-class TableList extends WP_List_Table {
+class TableList extends \WP_List_Table {
 	
 	private $datas;
 	private $columns;
-	private $perPage = 10;
+	private $perPage = 20;
 	private $totalItem;
 	private $topTableNav;
 
@@ -94,7 +94,7 @@ class TableList extends WP_List_Table {
 	}
 
 	public function column_wcproductname($item) {
-		$pf = new WC_Product_Factory;
+		$pf = new \WC_Product_Factory;
 		$p = $pf->get_product($item->wc_item_id);
 		$sku = $p->get_sku();
 		if( ( $pf = wp_get_post_parent_id( $p->get_id() ) ) !== 0) {

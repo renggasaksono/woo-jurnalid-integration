@@ -27,7 +27,13 @@ class JurnalApi {
 		return $this->unpaid_meta_key;
 	}
 
+	public function getSyncTableName() {
+		global $wpdb;
+		return $wpdb->prefix . 'wji_order_sync_log';
+	}
+
 	public function checkApiKeyValid() {
+		
 		// Make a simple test API request
 		$response = $this->mekariRequest->make(
 			'GET',
@@ -44,6 +50,7 @@ class JurnalApi {
 
 	public function getAllJurnalWarehouses() {
 
+		// Make request
 		$response = $this->mekariRequest->make(
 			'GET',
 			'/public/jurnal/api/v1/warehouses'
@@ -67,7 +74,7 @@ class JurnalApi {
 		return false;
 	}
 
-	// Used by WJI_AjaxCallback:wji_get_jurnal_products_callback()
+	// Used by AjaxCallback:wji_get_jurnal_products_callback()
 	public function getAllJurnalItems($params) {
 
 		$page = isset($params['page']) ? $params['page'] : 1;
@@ -87,7 +94,7 @@ class JurnalApi {
 		// Use Select2 resources
 		$response = $this->mekariRequest->make(
 			'GET',
-			'select2_resources/get_product',
+			'/public/jurnal/api/v1/select2_resources/get_product',
 			'',
 			$body
 		);
@@ -107,93 +114,105 @@ class JurnalApi {
 				// write_log(json_encode($formatted_data));
 				return json_encode($formatted_data);
 			}
-			else {
-				return json_encode($response);
-			}
 		}
 
 		return false;
 	}
 
-	public function getListItemAjax($param) {
-
-		$page_size = 10;
-		$page = 1;
-
-		$this->endpoint = 'products';
-		$this->body = [
-			'q'		 	=> $param,
-			'page' 		=> $page,
-			'page_size'	=> $page_size
-		];
-
-		$response = $this->get();
-
-		if(is_array($response)) {
-			$data = json_decode($response['body']);
-			
-			$formatted_data = array();
-	 		foreach ($data->products as $key => $product) {
-	 			$formatted_data[$key]['id'] = $product->id;
-	 			$formatted_data[$key]['text'] = $product->name;
-	 		}
-	 		return $formatted_data;
-		}
-		else {
-			return $response;
-		}
-	}
-
 	public function postJournalEntry($data) {
-		$this->endpoint = 'journal_entries';
-		$this->body = json_encode($data);
-		$response = $this->post();
-		$data = json_decode($response['body']); // Ini outputnya jd object
-		return $data;
+		write_log($data);
+
+		// Make request
+		$response = $this->mekariRequest->make(
+			'POST',
+			'/public/jurnal/api/v1/journal_entries',
+			'',
+			$data
+		);
+
+		$response = json_decode($response['body']);
+		write_log($response);
+		return $response;
 	}
 
 	public function patchJournalEntry($journal_entry_id, $data) {
-		$this->endpoint = 'journal_entries/'.$journal_entry_id;
-		$this->body = json_encode($data);
-		$response = $this->patch();
-		$data = json_decode($response['body']); // Ini outputnya jd object
-		return $data;
+		write_log($data);
+
+		// Make request
+		$response = $this->mekariRequest->make(
+			'PATCH',
+			'/public/jurnal/api/v1/journal_entries/'.$journal_entry_id,
+			'',
+			$data
+		);
+
+		$response = json_decode($response['body']);
+		write_log($response);
+		return $response;
 	}
 
 	public function deleteJournalEntry( $journal_entry_id ) {
-		$this->endpoint = 'journal_entries/'.$journal_entry_id;
-		$this->body = '';
-		$response = $this->delete();
-		$data = json_decode($response['body']); // Ini outputnya jd object
-		return $data;
+		write_log($data);
+
+		// Make request
+		$response = $this->mekariRequest->make(
+			'DELETE',
+			'/public/jurnal/api/v1/journal_entries/'.$journal_entry_id,
+			'',
+			$data
+		);
+
+		$response = json_decode($response['body']);
+		write_log($response);
+		return $response;
 	}
 
 	public function postStockAdjustments($data) {
-		$this->endpoint = 'stock_adjustments';
-		$this->body = json_encode($data);
-		$response = $this->post();
-		$data = json_decode($response['body']); // Ini outputnya jd object
-		return $data;
+		write_log($data);
+
+		// Make request
+		$response = $this->mekariRequest->make(
+			'POST',
+			'/public/jurnal/api/v1/stock_adjustments',
+			'',
+			$data
+		);
+
+		$response = json_decode($response['body']);
+		write_log($response);
+		return $response;
 	}
 
 	public function deleteStockAdjustments( $stock_adj_id ) {
-		$this->endpoint = 'stock_adjustments/'.$stock_adj_id;
-		$this->body = '';
-		$response = $this->delete();
-		$data = json_decode($response['body']); // Ini outputnya jd object
-		return $data;
+		write_log($data);
+
+		// Make request
+		$response = $this->mekariRequest->make(
+			'DELETE',
+			'/public/jurnal/api/v1/stock_adjustments/'.$stock_adj_id,
+			'',
+			$data
+		);
+
+		$response = json_decode($response['body']);
+		write_log($response);
+		return $response;
 	}
 
 	public function getJurnalProductName( $product_id ) {
 
-		$this->endpoint = 'products/'.$product_id;
-		$this->body = '';
+		// Make request
+		$response = $this->mekariRequest->make(
+			'GET',
+			'/public/jurnal/api/v1/products/'.$product_id
+		);
 
-		$response = $this->get();
-
-		if(is_array($response)) {
-			$data = json_decode($response['body']);
-			return isset($data->product) ? $data->product->name : null;
+		// Check if the response indicates success
+		if ($response['success'] && $response['status_code'] === 200) {
+			if(is_array($response)) {
+				$data = json_decode($response['body']);
+				return isset($data->product) ? $data->product->name : null;
+			}
 		}
 		
 		return null;
@@ -201,62 +220,45 @@ class JurnalApi {
 
 	public function getAllJurnalAccounts() {
 
-		$this->endpoint = 'accounts';
-		$this->body = '';
-
-		$response = $this->get();
-		if(is_array($response)) {
-			$data = json_decode($response['body']);
-			$formatted_data = array();
-	 		foreach ($data->accounts as $key => $account) {
-	 			$formatted_data[$key]['id'] = $account->id;
-	 			$formatted_data[$key]['text'] = $account->number.' - '.$account->name;
-	 		}
-	 		return $formatted_data;
+		// Make request
+		$response = $this->mekariRequest->make(
+			'GET',
+			'/public/jurnal/api/v1/accounts'
+		);
+	
+		// Check if the response indicates success
+		if ($response['success'] && $response['status_code'] === 200) {
+			if(is_array($response)) {
+				$data = json_decode($response['body']);
+				$formatted_data = array();
+				 foreach ($data->accounts as $key => $account) {
+					 $formatted_data[$key]['id'] = $account->id;
+					 $formatted_data[$key]['text'] = $account->number.' - '.$account->name;
+				 }
+				 return $formatted_data;
+			}
 		}
-		else {
-			return $response;
-		}
+	
+		return false;
 	}
 
 	public function getJurnalAccountName( $account_id ) {
 
-		$this->endpoint = 'accounts/'.$account_id;
-		$this->body = '';
+		// Make request
+		$response = $this->mekariRequest->make(
+			'GET',
+			'/public/jurnal/api/v1/accounts/'.$account_id
+		);
 
-		$response = $this->get();
-
-		if(is_array($response)) {
-			$data = json_decode($response['body']);
-			return isset($data->account->name) ? $data->account->name : false;
+		// Check if the response indicates success
+		if ($response['success'] && $response['status_code'] === 200) {
+			if(is_array($response)) {
+				$data = json_decode($response['body']);
+				return isset($data->account->name) ? $data->account->name : false;
+			}
 		}
-		else {
-			return $response;
-		}
-	}
-
-	// Deprecated function as of 3.0.0
-	public function getJournalProducts() {
-		// Check cached data exists
-		// write_log( get_transient( 'wji_cached_journal_products' ) );
-		if( false === ( $jurnal_products = get_transient( 'wji_cached_journal_products' ) ) ) {
-			$jurnal_products = $this->getAllJurnalItems($params = null);
-
-	 		if(is_array($jurnal_products)) {
-		 		// Stores data in cache for future uses
-		 		set_transient( 'wji_cached_journal_products', $jurnal_products, 1 * DAY_IN_SECONDS );
-		 		return $jurnal_products;
-		 	} else {
-		 		return false;
-		 	}
- 		} else {
- 			return $jurnal_products;
- 		}
-	}
-
-	public function getSyncTableName() {
-		global $wpdb;
-		return $wpdb->prefix . 'wji_order_sync_log';
+		
+		return false;
 	}
 
 	public function get_paid_sync_data( $order ) {
