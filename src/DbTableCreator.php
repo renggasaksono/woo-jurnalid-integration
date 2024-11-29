@@ -1,6 +1,8 @@
 <?php
 
-class WJI_DbTableCreator {
+namespace Saksono\Woojurnal;
+
+class DbTableCreator {
 
 	function wji_create_product_mapping_table() {
 		global $wpdb;

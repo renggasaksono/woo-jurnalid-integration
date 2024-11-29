@@ -1,13 +1,11 @@
 <?php
 
-if( ! class_exists( 'WJI_IntegrationAPI' ) ) {
-    require_once( 'WJI_IntegrationAPI.php' );
-}
+namespace Saksono\Woojurnal;
 
-class WJI_AjaxCallback {
+class AjaxCallback {
 
 	static function wji_item_ajax_callback(){
-	 	$api = new WJI_IntegrationAPI();
+	 	$api = new \Saksono\Woojurnal\JurnalApi();
 
 	 	$data = $api->getListItemAjax(WJI_Helper::sanitize($_GET['q']));
 
@@ -75,7 +73,7 @@ class WJI_AjaxCallback {
 		// write_log($params);
 
 		// Iniate API class
-		$api = new WJI_IntegrationAPI;
+		$api = new \Saksono\Woojurnal\JurnalApi;
 		$response = $api->getAllJurnalItems($params);
 		echo $response;
 		wp_die();

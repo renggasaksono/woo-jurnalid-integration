@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WooCommerce Jurnal.ID Integration
  * Description:       Integrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.
- * Version:           4.0.0
+ * Version:           5.0.0
  * Requires at least: 5.5
  * Author:            Rengga Saksono
  * Author URI:        https://id.linkedin.com/in/renggasaksono
@@ -10,21 +10,7 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  */
 
-if( ! class_exists( 'WJI_DbTableCreator' ) ) {
-    require_once( 'includes/WJI_DbTableCreator.php' );
-}
-if( ! class_exists( 'WJI_TableList' ) ) {
-    require_once( 'includes/WJI_TableList.php' );
-}
-if( ! class_exists( 'WJI_AjaxCallback' ) ) {
-    require_once( 'includes/WJI_AjaxCallback.php' );
-}
-if( ! class_exists( 'WJI_IntegrationAPI' ) ) {
-    require_once( 'includes/WJI_IntegrationAPI.php' );
-}
-if( ! class_exists( 'WJI_Helper' ) ) {
-    require_once( 'includes/WJI_Helper.php' );
-}
+require_once(plugin_dir_path(__FILE__) . '/vendor/autoload.php');
 
 /* ------------------------------------------------------------------------ *
  * Plugin Activation & Deactivation
@@ -44,7 +30,7 @@ function wji_on_activation() {
     }
 
     // Create db tables
-    $tc = new WJI_DbTableCreator();
+    $tc = new \Saksono\Woojurnal\DbTableCreator();
     $tc->wji_create_product_mapping_table(); // buat table untuk translasi item jurnal dan woo
     $tc->wcbc_create_order_sync_table();
 
@@ -150,7 +136,7 @@ function wji_settings_display() {
          
         <?php
             // Check API key valid
-            $api = new WJI_IntegrationAPI;
+            $api = new \Saksono\Woojurnal\JurnalApi;
             $validApi = $api->checkApiKeyValid();
 
             if( $active_tab == 'general_options' ) {
@@ -161,7 +147,7 @@ function wji_settings_display() {
                 submit_button('Simpan Pengaturan');
                 echo '</form>';
             } elseif( $active_tab == 'account_options' ) {
-                if( !$validApi ) { echo '<p>API Key tidak valid. Silahkan mengisi API Key di Pengaturan.</p>'; }
+                if( !$validApi ) { echo '<p>API Key tidak valid. Harap mengisi Pengaturan Aplikasi Jurnal.ID terlebih dahulu.</p>'; }
                 else {
                     echo '<form method="post" action="options.php">';
                     settings_fields( 'wji_account_mapping_options' );
@@ -170,12 +156,12 @@ function wji_settings_display() {
                     echo '</form>';
                 }
             } elseif( $active_tab == 'product_options' ) {
-                if( !$validApi ) { echo '<p>API Key tidak valid. Silahkan mengisi API Key di Pengaturan.</p>'; }
+                if( !$validApi ) { echo '<p>API Key tidak valid. Harap mengisi Pengaturan Aplikasi Jurnal.ID terlebih dahulu.</p>'; }
                 else {
                     do_settings_sections( 'wji_plugin_product_mapping_options' );
                 }
             } elseif( $active_tab == 'order_options' ) {
-                if( !$validApi ) { echo '<p>API Key tidak valid. Silahkan mengisi API Key di Pengaturan.</p>'; }
+                if( !$validApi ) { echo '<p>API Key tidak valid. Harap mengisi Pengaturan Aplikasi Jurnal.ID terlebih dahulu.</p>'; }
                 else {
                     do_settings_sections( 'wji_plugin_order_sync_options' );
                 }
@@ -201,8 +187,16 @@ function wji_initialize_general_options() {
     // Register a section
     add_settings_section(
         'general_settings_section',         // ID used to identify this section and with which to register options
-        'Pengaturan Umum',                  // Title to be displayed on the administration page
+        'Pengaturan Aplikasi Jurnal.ID',    // Title to be displayed on the administration page
         'wji_general_options_callback',     // Callback used to render the description of the section
+        'wji_plugin_general_options'        // Page on which to add this section of options
+    );
+
+    // Register a section
+    add_settings_section(
+        'tax_settings_section',             // ID used to identify this section and with which to register options
+        'Pengaturan Pajak',                 // Title to be displayed on the administration page
+        'wji_tax_section_callback',         // Callback used to render the description of the section
         'wji_plugin_general_options'        // Page on which to add this section of options
     );
 
@@ -216,9 +210,17 @@ function wji_initialize_general_options() {
      
     // Create the settings
     add_settings_field( 
-        'api_key',                          // ID used to identify the field throughout the theme
-        'Jurnal.ID API Key',                // The label to the left of the option interface element
-        'wji_api_key_callback',             // The name of the function responsible for rendering the option interface
+        'client_id',                        // ID used to identify the field throughout the theme
+        'Client ID',                        // The label to the left of the option interface element
+        'wji_client_id_callback',           // The name of the function responsible for rendering the option interface
+        'wji_plugin_general_options',       // The page on which this option will be displayed
+        'general_settings_section'          // The name of the section to which this field belongs
+    );
+
+    add_settings_field( 
+        'client_secret',                    // ID used to identify the field throughout the theme
+        'Client Secret',                    // The label to the left of the option interface element
+        'wji_client_secret_callback',       // The name of the function responsible for rendering the option interface
         'wji_plugin_general_options',       // The page on which this option will be displayed
         'general_settings_section'          // The name of the section to which this field belongs
     );
@@ -228,7 +230,7 @@ function wji_initialize_general_options() {
         'Sinkronisasi Pajak',               // The label to the left of the option interface element
         'wji_include_tax_callback',         // The name of the function responsible for rendering the option interface
         'wji_plugin_general_options',       // The page on which this option will be displayed
-        'general_settings_section'          // The name of the section to which this field belongs
+        'tax_settings_section'              // The name of the section to which this field belongs
     );
 
     add_settings_field( 
@@ -389,11 +391,15 @@ function wji_general_options_callback() {
     return '';
 }
 
+function wji_tax_section_callback() {
+    return '';
+}
+
 function wji_stock_section_callback() {
     // Check if cached data available
     if( false === ( get_transient( 'wji_cached_journal_warehouses' ) ) ) {
         // Set list of accounts for future uses
-        $api = new WJI_IntegrationAPI();
+        $api = new \Saksono\Woojurnal\JurnalApi();
         $warehouses = $api->getAllJurnalWarehouses();
         if( $warehouses && count($warehouses)>0 ) {
             set_transient( 'wji_cached_journal_warehouses', $warehouses, 7 * DAY_IN_SECONDS );
@@ -403,7 +409,7 @@ function wji_stock_section_callback() {
 
 function wji_product_mapping_callback() {
     global $wpdb;
-    $tablelist = new WJI_TableList();
+    $tablelist = new \Saksono\Woojurnal\TableList();
 
     $data = [];
     $table_name = $wpdb->prefix . 'wji_product_mapping';
@@ -427,8 +433,8 @@ function wji_product_mapping_callback() {
 function wji_order_sync_callback() {
     global $wpdb;
 
-    $tablelist = new WJI_TableList();
-    $api = new WJI_IntegrationAPI();
+    $tablelist = new \Saksono\Woojurnal\TableList();
+    $api = new \Saksono\Woojurnal\JurnalApi();
 
     // Retry sync function
     if ( isset($_GET['_wjinonce']) || wp_verify_nonce( isset($_GET['_wjinonce']), 'retry_sync' ) || is_numeric( isset($_GET[ '_syncid' ]) ) ) {
@@ -503,7 +509,7 @@ function wji_account_mapping_callback() {
     // Check if cached data available
     if( false === ( get_transient( 'wji_cached_journal_account' ) ) ) {
         // Set list of accounts for future uses
-        $api = new WJI_IntegrationAPI();
+        $api = new \Saksono\Woojurnal\JurnalApi();
         if( $accounts = $api->getAllJurnalAccounts() ) {
             set_transient( 'wji_cached_journal_account', $accounts, 7 * DAY_IN_SECONDS );
         }
@@ -514,19 +520,30 @@ function wji_account_mapping_callback() {
  * Field Callbacks
  * ------------------------------------------------------------------------ */
  
-function wji_api_key_callback($args) {
+function wji_client_id_callback($args) {
     $get_options = get_option('wji_plugin_general_options');
-    $field_name = 'api_key';
+    $field_name = 'client_id';
     if ( !array_key_exists($field_name,$get_options) ) {
         $get_options[$field_name] = '';
     }
     $options = $get_options;
-    $html = '<input type = "text" class="regular-text" id="api_key" name="wji_plugin_general_options[api_key]" value="' . sanitize_text_field($options['api_key']) . '">';
+    $html = '<input type = "text" class="regular-text" id="client_id" name="wji_plugin_general_options[client_id]" value="' . sanitize_text_field($options['client_id']) . '">';
+    echo $html;
+}
+
+function wji_client_secret_callback($args) {
+    $get_options = get_option('wji_plugin_general_options');
+    $field_name = 'client_secret';
+    if ( !array_key_exists($field_name,$get_options) ) {
+        $get_options[$field_name] = '';
+    }
+    $options = $get_options;
+    $html = '<input type = "password" class="regular-text" id="client_secret" name="wji_plugin_general_options[client_secret]" value="' . sanitize_text_field($options['client_secret']) . '">';
     echo $html;
 }
 
 function wji_wh_id_callback($args) {
-    $api = new WJI_IntegrationAPI();
+    $api = new \Saksono\Woojurnal\JurnalApi();
     if ( !$api->checkApiKeyValid() ) {
         echo 'API Key tidak valid.';
     } else {
@@ -733,7 +750,7 @@ add_action( 'woocommerce_order_status_processing', 'wji_run_sync_process', 10, 1
 function wji_run_sync_process( $order_id ) {
     global $wpdb;
     
-    $api = new WJI_IntegrationAPI();
+    $api = new \Saksono\Woojurnal\JurnalApi();
     $options = get_option('wji_plugin_general_options');
 
     // Check if order is paid
@@ -809,7 +826,7 @@ function wji_update_order_cancelled( $order_id ) {
     global $wpdb;
     write_log('Update order cancelled Order #'.$order_id);
 
-    $api = new WJI_IntegrationAPI();
+    $api = new \Saksono\Woojurnal\JurnalApi();
     
     // Check if order meta exists
     if( $journal_entry_id = get_post_meta( $order_id, $api->getMetaKey(), true )  ) {
@@ -939,7 +956,7 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
     global $wpdb;
     write_log('Sync jurnal entry #'.$sync_id);
     
-    $api = new WJI_IntegrationAPI();
+    $api = new \Saksono\Woojurnal\JurnalApi();
     $order = wc_get_order( $order_id );
     $data = [];
     $sync_data = [];
@@ -1009,7 +1026,7 @@ function wji_desync_journal_entry( int $sync_id, int $order_id ) {
     global $wpdb;
     write_log('Desync journal entry #'.$sync_id);
     
-    $api = new WJI_IntegrationAPI();
+    $api = new \Saksono\Woojurnal\JurnalApi();
     
     // Delete journal entry if exists
     $journal_entry_id = get_post_meta( $order_id, $api->getMetaKey(), true );
@@ -1053,7 +1070,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
     global $wpdb;
     write_log('Sync stock adjustment #'.$sync_id);
     
-    $api = new WJI_IntegrationAPI();
+    $api = new \Saksono\Woojurnal\JurnalApi();
     $order = wc_get_order( $order_id );
     $get_general_options = get_option('wji_plugin_general_options');
     $get_account_options = get_option('wji_account_mapping_options');
@@ -1193,7 +1210,7 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
     global $wpdb;
     write_log('Desync stock adjustment #'.$sync_id);
 
-    $api = new WJI_IntegrationAPI();
+    $api = new \Saksono\Woojurnal\JurnalApi();
 
     // Delete journal entry if exists
     $stock_adjustment_id = get_post_meta( $order_id, $api->getStockMetaKey(), true );

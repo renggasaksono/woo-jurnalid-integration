@@ -1,75 +1,18 @@
 <?php
 
-class WJI_IntegrationAPI {
+namespace Saksono\Woojurnal;
 
-	private $apikey;
-	const 	baseUrl 	= 'https://api.jurnal.id/core/api/v1/';
-	private $endpoint;
-	private $body;
+use Saksono\Woojurnal\MekariRequest;
+
+class JurnalApi {
+
 	private $meta_key = '_wji_journal_entry_id';
 	private $stock_meta_key = '_wji_stock_adjustment_id';
 	private $unpaid_meta_key = '_wji_journal_entry_unpaid_id';
+	private $mekariRequest;
 
 	public function __construct() {
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'wcbc_setting';
-		if($options = get_option('wji_plugin_general_options') ) {
-			if($options['api_key']) {
-				$this->apikey = $options['api_key'];
-			}
-		}
-	}
-
-	private function getUrl() {
-		return self::baseUrl . $this->endpoint;
-	}
-
-	private function post() {
-		return wp_remote_post( $this->getUrl(), [
-			'headers' => [
-				'Content-Type' => 'application/json; charset=utf-8', 
-				'apikey' => $this->apikey
-			],
-			'method' => 'POST',
-			'timeout' => 75,				    
-			'body' => $this->body
-		]);	
-	}
-
-	private function patch() {
-		return wp_remote_post( $this->getUrl(), [
-			'headers' => [
-				'Content-Type' => 'application/json; charset=utf-8', 
-				'apikey' => $this->apikey
-			],
-			'method' => 'PATCH',
-			'timeout' => 75,				    
-			'body' => $this->body
-		]);	
-	}
-
-	private function get() {
-		return wp_remote_get( $this->getUrl(), [
-			'headers' => [
-				'Content-Type' => 'application/json; charset=utf-8', 
-				'apikey' => $this->apikey
-			],
-			'method' => 'GET',
-			'timeout' => 75,				    
-			'body' => $this->body
-		]);	
-	}
-
-	private function delete() {
-		return wp_remote_request( $this->getUrl(), [
-			'headers' => [
-				'Content-Type' => 'application/json; charset=utf-8', 
-				'apikey' => $this->apikey
-			],
-			'method' => 'DELETE',
-			'timeout' => 75,			    
-			'body' => $this->body
-		]);	
+		$this->mekariRequest = new MekariRequest;
 	}
 
 	public function getMetaKey() {
@@ -84,28 +27,44 @@ class WJI_IntegrationAPI {
 		return $this->unpaid_meta_key;
 	}
 
+	public function checkApiKeyValid() {
+		// Make a simple test API request
+		$response = $this->mekariRequest->make(
+			'GET',
+			'/public/jurnal/api/v1/user_account/profile'
+		);
+	
+		// Check if the response indicates success
+		if ($response['success'] && $response['status_code'] === 200) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public function getAllJurnalWarehouses() {
 
-		$this->endpoint = 'warehouses';
-		$this->body = '';
-		$response = $this->get();
-		$response_code = wp_remote_retrieve_response_code( $response );
+		$response = $this->mekariRequest->make(
+			'GET',
+			'/public/jurnal/api/v1/warehouses'
+		);
+	
+		// Check if the response indicates success
+		if ($response['success'] && $response['status_code'] === 200) {
 
-		if($response_code == 200) {
 			$body = json_decode( $response['body'] );
 			$formatted_data = array();
+
 			if(isset($body->warehouses)) {
 				foreach ($body->warehouses as $key => $wh) {
 		 			$formatted_data[$key]['id'] = $wh->id;
 		 			$formatted_data[$key]['text'] = $wh->name;
 		 		}
 		 		return $formatted_data;
-			} else {
-				return false;
 			}
-		} elseif ($response_code == 500) {
-			wp_die('Internal Server Error');
 		}
+
+		return false;
 	}
 
 	// Used by WJI_AjaxCallback:wji_get_jurnal_products_callback()
@@ -118,33 +77,42 @@ class WJI_IntegrationAPI {
 		$general_options = get_option('wji_plugin_general_options');
 		$warehouse_id = isset( $general_options[ 'wh_id' ] ) ? $general_options['wh_id'] : '';
 
-		// Use Select2 resources
-		$this->endpoint = 'select2_resources/get_product';
-		$this->body = [
+		$body = [
 			'q'				=> $q,
 			'page' 			=> $page,
 			'type'			=> 'tracked',
 			'warehouse_id'	=> $warehouse_id
 		];
 
-		$response = $this->get();
-		// write_log($response);
+		// Use Select2 resources
+		$response = $this->mekariRequest->make(
+			'GET',
+			'select2_resources/get_product',
+			'',
+			$body
+		);
+	
+		// Check if the response indicates success
+		if ($response['success'] && $response['status_code'] === 200) {
+			
+			if(is_array($response)) {
+				$data = json_decode($response['body']);
+				// write_log($data);
+				$formatted_data = array();
+				$formatted_data['results'] = [];
+				 foreach ($data->data as $key => $product) {
+					 $formatted_data['results'][$key]['id'] = $product->id;
+					 $formatted_data['results'][$key]['text'] = $product->product_code.' - '.$product->name;
+				 }
+				// write_log(json_encode($formatted_data));
+				return json_encode($formatted_data);
+			}
+			else {
+				return json_encode($response);
+			}
+		}
 
-		if(is_array($response)) {
-			$data = json_decode($response['body']);
-			// write_log($data);
-			$formatted_data = array();
-			$formatted_data['results'] = [];
-	 		foreach ($data->data as $key => $product) {
-	 			$formatted_data['results'][$key]['id'] = $product->id;
-	 			$formatted_data['results'][$key]['text'] = $product->product_code.' - '.$product->name;
-	 		}
-			// write_log(json_encode($formatted_data));
-			return json_encode($formatted_data);
-		}
-		else {
-			return json_encode($response);
-		}
+		return false;
 	}
 
 	public function getListItemAjax($param) {
@@ -229,25 +197,6 @@ class WJI_IntegrationAPI {
 		}
 		
 		return null;
-	}
-
-	public function checkApiKeyValid() {
-		// Check if any key is set
-		if(!$this->apikey) {
-			return false;
-		}
-		// Make a simple test api request
-		$this->endpoint = 'user_account/profile';
-		$this->body = '';
-		$response = $this->get();
-		$response_code = wp_remote_retrieve_response_code( $response );
-		if($response_code == 200) {
-	 		return true;
-		} elseif($response_code == 500) {
-			wp_die( '<pre>Respon dari Jurnal.ID API: Internal Server Error. Silahkan mencoba kembali beberapa waktu kedepan.</pre>' );
-		} else {
-			return false;
-		}
 	}
 
 	public function getAllJurnalAccounts() {

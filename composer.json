@@ -1,0 +1,16 @@
+{
+    "name": "saksono/woo-jurnalid-integration",
+    "authors": [
+        {
+            "name": "Rengga Saksono",
+            "email": "rengga.saksono@gmail.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^7.0",
+        "nesbot/carbon": "^2.54"
+    },
+    "autoload": {
+        "psr-4": {"Saksono\\Woojurnal\\": "src/"}
+    }
+}

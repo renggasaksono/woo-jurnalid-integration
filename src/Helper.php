@@ -1,6 +1,8 @@
 <?php
 
-class WJI_Helper {
+namespace Saksono\Woojurnal;
+
+class Helper {
 
 	static function sanitize_int($value) {
 		if(intval($value)) {

@@ -1,13 +1,12 @@
 <?php
 
+namespace Saksono\Woojurnal;
+
 if( ! class_exists( 'WP_List_Table' ) ) {
     require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
 }
-if( ! class_exists( 'WJI_IntegrationAPI' ) ) {
-    require_once( 'WJI_IntegrationAPI.php' );
-}
 
-class WJI_TableList extends WP_List_Table {
+class TableList extends WP_List_Table {
 	
 	private $datas;
 	private $columns;
