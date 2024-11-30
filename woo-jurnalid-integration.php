@@ -19,12 +19,13 @@ require_once(plugin_dir_path(__FILE__) . '/vendor/autoload.php');
 
 use Saksono\Woojurnal\Admin\SettingsPage;
 use Saksono\Woojurnal\Admin\AccountMapping;
+use Saksono\Woojurnal\Admin\ProductMapping;
 
 // Initialize the plugin
 add_action('plugins_loaded', function () {
     new SettingsPage();
     new AccountMapping();
-    // new ProductMapping();
+    new ProductMapping();
     // new OrderSync();
 });
 
@@ -74,21 +75,6 @@ add_action( 'before_woocommerce_init', function() {
  * ------------------------------------------------------------------------ */
 
 /**
- * Initializes plugin's product mapping between products in WooCommerce and products in Jurnal.ID
- *
- */
-function wji_intialize_product_options() {
- 
-    add_settings_section(
-        'product_settings_section',             // ID used to identify this section and with which to register options
-        '',                                     // Title to be displayed on the administration page
-        'wji_product_mapping_callback',         // Callback used to render the description of the section
-        'wji_plugin_product_mapping_options'    // Page on which to add this section of options
-    );
-}
-add_action( 'admin_init', 'wji_intialize_product_options' );
-
-/**
  * Initializes plugin's order sync log section
  *
  */
@@ -106,29 +92,6 @@ add_action( 'admin_init', 'wji_intialize_order_sync_options' );
 /* ------------------------------------------------------------------------ *
  * Section Callbacks
  * ------------------------------------------------------------------------ */
-
-function wji_product_mapping_callback() {
-    global $wpdb;
-    $tablelist = new \Saksono\Woojurnal\TableList();
-
-    $data = [];
-    $table_name = $wpdb->prefix . 'wji_product_mapping';
-    $table_post = $wpdb->prefix . 'posts';
-    $offset = $tablelist->getPerpage() * ($tablelist->get_pagenum() - 1);
-    $where = '';
-
-    $products = $wpdb->get_results("select wjpm.* from {$table_name} wjpm join {$table_post} p on wjpm.wc_item_id=p.id {$where} order by id limit {$tablelist->getPerpage()} offset {$offset}");
-    $count = $wpdb->get_var("select count(*) from {$table_name} wjpm join {$table_post} p on wjpm.wc_item_id=p.id {$where}");
-
-    $tablelist->setTotalItem($count);
-    $tablelist->setDatas($products);
-    $tablelist->setColumns([
-        'wcproductname' => 'Produk pada Woocommerce (SKU - Nama Produk)',
-        'jurnal_item_code' => 'Produk pada Jurnal.ID (SKU - Nama Produk)'
-    ]);
-    
-    $tablelist->generate();
-}
 
 function wji_order_sync_callback() {
     global $wpdb;
