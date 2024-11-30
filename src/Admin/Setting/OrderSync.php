@@ -12,6 +12,7 @@ class OrderSync {
     public function __construct()
     {
         add_action('admin_init', [$this, 'initialize_order_sync']);
+        add_filter('removable_query_args', [$this, 'remove_retry_sync_query_args'], 10, 1);
 	}
 
     /**
@@ -75,14 +76,6 @@ class OrderSync {
                         wji_desync_stock_adjustment( (int) $sync_id, (int) $order_id );
                         break;
                 }
-    
-                // Remove retry sync url args
-                function remove_retry_sync_query_args( $args ) {
-                    $args[] = '_wjinonce';
-                    $args[] = '_syncid';
-                    return $args;
-                }
-                add_filter( 'removable_query_args', 'remove_retry_sync_query_args', 10, 1 );
             }
         }
     
@@ -105,5 +98,12 @@ class OrderSync {
         ]);
         
         $tablelist->generate();
+    }
+
+    // Remove retry sync url args
+    public function remove_retry_sync_query_args( $args ) {
+        $args[] = '_wjinonce';
+        $args[] = '_syncid';
+        return $args;
     }
 }
