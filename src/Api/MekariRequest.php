@@ -1,6 +1,6 @@
 <?php
 
-namespace Saksono\Woojurnal;
+namespace Saksono\Woojurnal\Api;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -97,10 +97,11 @@ class MekariRequest {
                 'body' => $response->getBody()->getContents()
             ];
         } catch (ClientException $e) {
+            $responseBody = json_decode($e->getResponse()->getBody());
             return [
                 'success' => false,
                 'status_code' => $e->getResponse()->getStatusCode(),
-                'body' => $e->getResponse()->getBody()
+                'body' => $this->getErrorMessages($responseBody),
             ];
         } catch (\Exception $e) {
             return [
@@ -110,4 +111,14 @@ class MekariRequest {
         }
     }
 
+    public function getErrorMessages( $response ) {
+		if( isset($response->errors) ) {
+			$message = json_encode($response->errors);
+		} elseif( isset($response->error_full_messages) ) {
+			$message = implode(',',$response->error_full_messages);
+		} else {
+			$message = '';
+		}
+		return trim($message,'"');
+	}
 }

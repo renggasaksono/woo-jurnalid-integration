@@ -4,7 +4,7 @@ namespace Saksono\Woojurnal\Admin\Setting;
 
 defined( 'ABSPATH' ) || exit;
 
-use Saksono\Woojurnal\JurnalApi;
+use Saksono\Woojurnal\Api\Product as ProductApi;
 use Saksono\Woojurnal\Admin\TableList;
 
 class ProductMapping {
@@ -70,7 +70,7 @@ class ProductMapping {
 		// write_log($params);
 
 		// Iniate API class
-		$api = new JurnalApi();
+		$api = new ProductApi();
 		$response = $api->getAllJurnalItems($params);
 		echo $response;
 		wp_die();

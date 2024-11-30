@@ -1,10 +1,10 @@
 <?php
 
-namespace Saksono\Woojurnal;
+namespace Saksono\Woojurnal\Api;
 
 defined( 'ABSPATH' ) || exit;
 
-use Saksono\Woojurnal\MekariRequest;
+use Saksono\Woojurnal\Api\MekariRequest;
 
 class JurnalApi {
 
@@ -439,18 +439,6 @@ class JurnalApi {
 				]
 			)
 		);
-	}
-
-	public function getErrorMessages( $response ) {
-
-		if( isset($response->errors) ) {
-			$message = json_encode($response->errors);
-		} elseif( isset($response->error_full_messages) ) {
-			$message = implode(',',$response->error_full_messages);
-		} else {
-			$message = '';
-		}
-		return trim($message,'"');
 	}
 	
 }

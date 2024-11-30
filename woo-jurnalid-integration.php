@@ -95,7 +95,7 @@ add_action( 'woocommerce_order_status_processing', 'wji_run_sync_process', 10, 1
 function wji_run_sync_process( $order_id ) {
     global $wpdb;
     
-    $api = new \Saksono\Woojurnal\JurnalApi();
+    $api = new \Saksono\Woojurnal\Api\JurnalApi();
     $options = get_option('wji_plugin_general_options');
 
     // Check if order is paid
@@ -172,7 +172,7 @@ function wji_update_order_cancelled( $order_id ) {
     write_log('Update order cancelled Order #'.$order_id);
 
     $order = wc_get_order( $order_id );
-    $api = new \Saksono\Woojurnal\JurnalApi();
+    $api = new \Saksono\Woojurnal\Api\JurnalApi();
     
     // Check if order meta exists
     if( $journal_entry_id = $order->get_meta( $api->getJournalEntryMetaKey(), true )  ) {
@@ -303,7 +303,7 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
     global $wpdb;
     write_log('Sync Jurnal Entry running for ID #'.$sync_id);
     
-    $api = new \Saksono\Woojurnal\JurnalApi();
+    $api = new \Saksono\Woojurnal\Api\JurnalApi();
     $order = wc_get_order( $order_id );
     $data = [];
     $sync_data = [];
@@ -356,7 +356,7 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
         // Failed
         $sync_data['sync_status']       = 'ERROR';
         $sync_data['sync_data']         = json_encode( $data );
-        $sync_data['sync_note']         = $api->getErrorMessages( $do_sync );
+        $sync_data['sync_note']         = $do_sync['body'];
     }
 
     // Update sync log
@@ -374,7 +374,7 @@ function wji_desync_journal_entry( int $sync_id, int $order_id ) {
     write_log('Desync journal entry #'.$sync_id);
     
     $order = wc_get_order( $order_id );
-    $api = new \Saksono\Woojurnal\JurnalApi();
+    $api = new \Saksono\Woojurnal\Api\JurnalApi();
     
     // Delete journal entry if exists
     $journal_entry_id = $order->get_meta( $api->getJournalEntryMetaKey(), true );
@@ -400,7 +400,7 @@ function wji_desync_journal_entry( int $sync_id, int $order_id ) {
             return $wpdb->update( $api->getSyncTableName(), [
                     'sync_status'   => 'ERROR',
                     'sync_action'   => 'JE_DELETE',
-                    'sync_note'     => $api->getErrorMessages( $deleteEntryResponse )
+                    'sync_note'     => $deleteEntryResponse['body']
                 ],
                 [ 'id' => $sync_id ]
             );
@@ -418,7 +418,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
     global $wpdb;
     write_log('Sync stock adjustment #'.$sync_id);
     
-    $api = new \Saksono\Woojurnal\JurnalApi();
+    $api = new \Saksono\Woojurnal\Api\JurnalApi();
     $order = wc_get_order( $order_id );
     $get_general_options = get_option('wji_plugin_general_options');
     $get_account_options = get_option('wji_account_mapping_options');
@@ -530,7 +530,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
             return $wpdb->update( $api->getSyncTableName(), [
                     'sync_data'     => json_encode( $data ),
                     'sync_status'   => 'ERROR',
-                    'sync_note'     => $api->getErrorMessages( $postStockAdjustments )
+                    'sync_note'     => $postStockAdjustments['body']
                 ],
                 [ 'id' => $sync_id ]
             );
@@ -558,7 +558,7 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
     global $wpdb;
     write_log('Desync stock adjustment #'.$sync_id);
 
-    $api = new \Saksono\Woojurnal\JurnalApi();
+    $api = new \Saksono\Woojurnal\Api\JurnalApi();
     $order = wc_get_order( $order_id );
 
     // Delete journal entry if exists
@@ -585,7 +585,7 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
 
             return $wpdb->update( $api->getSyncTableName(), [
                     'sync_status'   => 'ERROR',
-                    'sync_note'     => $api->getErrorMessages( $deleteEntryResponse )
+                    'sync_note'     => $deleteEntryResponse['body']
                 ],
                 [ 'id' => $sync_id ]
             );

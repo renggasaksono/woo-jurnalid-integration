@@ -4,7 +4,7 @@ namespace Saksono\Woojurnal\Admin\Setting;
 
 defined( 'ABSPATH' ) || exit;
 
-use Saksono\Woojurnal\JurnalApi;
+use Saksono\Woojurnal\Api\Account as AccountApi;
 
 class AccountMapping {
 
@@ -123,7 +123,7 @@ class AccountMapping {
         // Check if cached data available
         if( false === ( get_transient( 'wji_cached_journal_account' ) ) ) {
             // Set list of accounts for future uses
-            $api = new JurnalApi();
+            $api = new AccountApi();
             if( $accounts = $api->getAllJurnalAccounts() ) {
                 set_transient( 'wji_cached_journal_account', $accounts, 7 * DAY_IN_SECONDS );
             }

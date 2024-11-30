@@ -4,7 +4,8 @@ namespace Saksono\Woojurnal\Admin\Setting;
 
 defined( 'ABSPATH' ) || exit;
 
-use Saksono\Woojurnal\JurnalApi;
+use Saksono\Woojurnal\Api\Profile as ProfileApi;
+use Saksono\Woojurnal\Api\Warehouse as WarehouseApi;
 
 class SettingsPage {
 
@@ -222,7 +223,7 @@ class SettingsPage {
         // Check if cached data available
         if( false === ( get_transient( 'wji_cached_journal_warehouses' ) ) ) {
             // Set list of accounts for future uses
-            $api = new JurnalApi();
+            $api = new WarehouseApi();
             $warehouses = $api->getAllJurnalWarehouses();
             if( $warehouses && count($warehouses)>0 ) {
                 set_transient( 'wji_cached_journal_warehouses', $warehouses, 7 * DAY_IN_SECONDS );
@@ -336,7 +337,7 @@ class SettingsPage {
         update_option( 'wji_plugin_profile_full_name', false );
 
         // Check API key valid
-        $api = new JurnalApi;
+        $api = new ProfileApi();
         $validApi = $api->checkApiKeyValid();
     }   
 }

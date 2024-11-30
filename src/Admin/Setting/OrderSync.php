@@ -4,7 +4,7 @@ namespace Saksono\Woojurnal\Admin\Setting;
 
 defined( 'ABSPATH' ) || exit;
 
-use Saksono\Woojurnal\JurnalApi;
+use Saksono\Woojurnal\Api\JurnalApi;
 use Saksono\Woojurnal\Admin\TableList;
 
 class OrderSync {
