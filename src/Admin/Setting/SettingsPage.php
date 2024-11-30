@@ -207,14 +207,11 @@ class SettingsPage {
 
     public function general_section_callback()
     {
-        if( ! get_option( 'wji_plugin_api_valid', false ) ) {
-            echo '<p>Masukan kredential dari aplikasi yang didaftarkan di <a href="https://developers.mekari.com/dashboard/applications" title="Mekari Developer" target="_blank">Mekari Developer</a></p>';
-        }
-
-        if( $profile_name = get_option( 'wji_plugin_profile_full_name', false ) ) {
+        if( get_option( 'wji_plugin_api_valid', false ) && $profile_name = get_option( 'wji_plugin_profile_full_name', false ) ) {
             echo '<p>Successfully connected to Jurnal.ID. Welcome, <b>'.$profile_name.'</b> &#128075;</p>';
-        }
-            
+        } else {
+            echo '<p>Masukan kredential dari aplikasi yang didaftarkan di <a href="https://developers.mekari.com/dashboard/applications" title="Mekari Developer" target="_blank">Mekari Developer</a></p>';
+        }   
     }
 
     public function tax_section_callback() {
@@ -239,57 +236,76 @@ class SettingsPage {
 
     public function client_id_callback()
     {
-        $options = get_option('wji_plugin_general_options');
-        echo '<input type="text" name="wji_plugin_general_options[client_id]" value="' . esc_attr($options['client_id'] ?? '') . '">';
+        $options = get_option('wji_plugin_general_options', []);
+        $field_name = 'client_id';
+        $value = $options[$field_name] ?? '';
+        echo '<input type="text" id="wji_client_id" name="wji_plugin_general_options[' . esc_attr($field_name) . ']" value="' . esc_attr($value) . '" />';
     }
 
     public function client_secret_callback()
     {
-        $options = get_option('wji_plugin_general_options');
-        echo '<input type="password" name="wji_plugin_general_options[client_secret]" value="' . esc_attr($options['client_secret'] ?? '') . '">';
+        $options = get_option('wji_plugin_general_options', []);
+        $field_name = 'client_secret';
+        $value = $options[$field_name] ?? '';
+        echo '<input type="password" id="wji_client_secret" name="wji_plugin_general_options[' . esc_attr($field_name) . ']" value="' . esc_attr($value) . '" />';
     }
     
     public function include_tax_callback($args) {
-        $get_options = get_option('wji_plugin_general_options');
+        $options = get_option('wji_plugin_general_options', []);
         $field_name = 'include_tax';
-        if ( !array_key_exists($field_name,$get_options) ) {
-            $get_options[$field_name] = '';
-        }
-        $html = '<input type="checkbox" name="wji_plugin_general_options['.$field_name.']" value="1"' . checked( 1, $get_options['include_tax'], false ) . '/>';
-        $html .= '<label for="include_tax">Aktifkan sinkronisasi akun pajak</label>';
-        echo $html;
+        $value = $options[$field_name] ?? '';
+        
+        echo '<label for="wji_include_tax">';
+        echo '<input type="checkbox" id="wji_include_tax" name="wji_plugin_general_options[' . esc_attr($field_name) . ']" value="1"' . checked(1, $value, false) . ' />';
+        echo ' Aktifkan sinkronisasi akun pajak';
+        echo '</label>';
     }
     
     public function sync_stock_callback($args) {
-        $get_options = get_option('wji_plugin_general_options');
+        $options = get_option('wji_plugin_general_options', []);
         $field_name = 'sync_stock';
-        if ( !array_key_exists($field_name,$get_options) ) {
-            $get_options[$field_name] = '';
-        }
-        $html = '<input type="checkbox" name="wji_plugin_general_options['.$field_name.']" value="1"' . checked( 1, $get_options[$field_name], false ) . '/>';
-        $html .= '<label for="sync_stock">Aktifkan sinkronisasi stok produk</label>';
-        echo $html;
+        $value = $options[$field_name] ?? '';
+        
+        echo '<label for="wji_sync_stock">';
+        echo '<input type="checkbox" id="wji_sync_stock" name="wji_plugin_general_options[' . esc_attr($field_name) . ']" value="1"' . checked(1, $value, false) . ' />';
+        echo ' Aktifkan sinkronisasi akun pajak';
+        echo '</label>';
     }
 
     public function wh_id_callback($args) {
-        $get_options = get_option('wji_plugin_general_options');
+        // Get plugin options
+        $options = get_option('wji_plugin_general_options', []);
         $field_name = 'wh_id';
-        if ( !array_key_exists($field_name,$get_options) ) {
-            $get_options[$field_name] = '';
-        }
-        $options = $get_options;
-
-        $html = '<select name="wji_plugin_general_options[wh_id]" class="wj-warehouses-select2">';
-        $html .= '<option></option>';
-        if( $warehouses = get_transient( 'wji_cached_journal_warehouses' ) ) {
+        $selected_value = $options[$field_name] ?? '';
+    
+        // Start the HTML for the select dropdown
+        $html = '<select id="wji_warehouse_id" name="wji_plugin_general_options[' . esc_attr($field_name) . ']" class="wj-warehouses-select2">';
+        $html .= '<option value="">' . esc_html__('Select a warehouse', 'wji-plugin') . '</option>';
+    
+        // Check for cached warehouses in the transient
+        if ($warehouses = get_transient('wji_cached_journal_warehouses')) {
             foreach ($warehouses as $wh) {
-                $html .= '<option value="' . esc_html( $wh['id'] ) . '"'
-                    . selected( $options[$field_name], $wh['id'], false ) . '>'
-                    . esc_html( $wh['text'] ) . '</option>';
+                $html .= sprintf(
+                    '<option value="%s" %s>%s</option>',
+                    esc_attr($wh['id']),
+                    selected($selected_value, $wh['id'], false),
+                    esc_html($wh['text'])
+                );
             }
+        } else {
+            $html .= '<option value="" disabled>' . esc_html__('No warehouses available', 'wji-plugin') . '</option>';
         }
+    
+        // Close the select dropdown
+        $html .= '</select>';
+    
+        // Optionally, include a description or helper text
+        if (isset($args['description'])) {
+            $html .= '<p class="description">' . esc_html($args['description']) . '</p>';
+        }
+    
         echo $html;
-    }
+    }    
 
     /* ------------------------------------------------------------------------ *
     * Field Validations

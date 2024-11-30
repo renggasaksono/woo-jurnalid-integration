@@ -103,4 +103,21 @@ jQuery(function($){
 		document.location.href = 'admin.php?page=wji_settings&tab=order_options&sync_status='+filter;
 	});
 
+	const $enableStockSync = $('#wji_sync_stock');
+	const $warehouse = $('#wji_warehouse_id');
+
+	function toggleRequired() {
+		if ($enableStockSync.is(':checked')) {
+			$warehouse.attr('required', true);
+		} else {
+			$warehouse.removeAttr('required');
+		}
+	}
+
+	// Initial state
+	toggleRequired();
+
+	// On checkbox change
+	$enableFeature.on('change', toggleRequired);
+
 });
