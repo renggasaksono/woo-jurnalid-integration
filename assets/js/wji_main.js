@@ -106,7 +106,7 @@ jQuery(function($){
 	const $enableStockSync = $('#wji_sync_stock');
 	const $warehouse = $('#wji_warehouse_id');
 
-	function toggleRequired() {
+	function toggleWhRequired() {
 		if ($enableStockSync.is(':checked')) {
 			$warehouse.attr('required', true);
 		} else {
@@ -115,9 +115,9 @@ jQuery(function($){
 	}
 
 	// Initial state
-	toggleRequired();
+	toggleWhRequired();
 
 	// On checkbox change
-	$enableFeature.on('change', toggleRequired);
+	$enableStockSync.on('change', toggleWhRequired);
 
 });

@@ -26,19 +26,19 @@ See here for more information https://www.jurnal.id/id/guidebooks/cara-melakukan
 ## Screenshots
 
 ### Plugin Settings
-![Plugin Settings](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/1-plugin-settings.jpg)
+![Plugin Settings](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/assets/image/1-plugin-settings.jpg)
 
 ### Account Mapping
-![Account Mapping](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/2-account-mapping.jpg)
+![Account Mapping](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/assets/image/2-account-mapping.jpg)
 
 ### Product Mapping
-![Product Mapping](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/3-product-mapping.jpg)
+![Product Mapping](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/assets/image/3-product-mapping.jpg)
 
 ### Sync History
-![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/4-sync-history.jpg)
+![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/assets/image/4-sync-history.jpg)
 
 ### Sync Process Flow
-![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/image/5-sync-process-flow)
+![Sync History](https://github.com/renggasaksono/woo-jurnalid-integration/blob/main/assets/image/5-sync-process-flow)
 
 ## To Do
 - Product Mapping: Filter and search
