@@ -1,12 +1,12 @@
 <?php
 
-namespace Saksono\Woojurnal\Table;
+namespace Saksono\Woojurnal\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
 class DbTableCreator {
 
-	function wji_create_product_mapping_table() {
+	public function wji_create_product_mapping_table() {
 		global $wpdb;
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -64,7 +64,7 @@ class DbTableCreator {
 		}
 	}
 
-	function wcbc_create_order_sync_table() {
+	public function wcbc_create_order_sync_table() {
 		global $wpdb;
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -92,4 +92,3 @@ class DbTableCreator {
 		dbDelta( $query );
 	}
 }
-?>

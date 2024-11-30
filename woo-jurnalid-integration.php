@@ -17,11 +17,13 @@ defined( 'ABSPATH' ) || exit;
 
 require_once(plugin_dir_path(__FILE__) . '/vendor/autoload.php');
 
-use Saksono\Woojurnal\DbTableCreator;
+use Saksono\Woojurnal\Admin\DbTableCreator;
 use Saksono\Woojurnal\Admin\Setting\SettingsPage;
 use Saksono\Woojurnal\Admin\Setting\AccountMapping;
 use Saksono\Woojurnal\Admin\Setting\ProductMapping;
 use Saksono\Woojurnal\Admin\Setting\SyncHistory;
+use Saksono\Woojurnal\Sync\OrderHandler;
+use Saksono\Woojurnal\Sync\ProductHandler;
 
 // Initialize the plugin
 add_action('plugins_loaded', function () {
@@ -29,28 +31,44 @@ add_action('plugins_loaded', function () {
     new AccountMapping();
     new ProductMapping();
     new SyncHistory();
+    new OrderHandler();
+    new ProductHandler();
 });
 
-/* ------------------------------------------------------------------------ *
- * Plugin Activation & Deactivation
- * ------------------------------------------------------------------------ */
+add_action( 'before_woocommerce_init', function() {
+	if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+	}
+} );
+
+/**
+ * Enqueue Plugin Scripts
+ */
+function enqueue_scripts()
+{
+    wp_enqueue_style('wji_select2_style', plugin_dir_url( __FILE__ ) . 'assets/css/select2.min.css', null, '4.0.3' );
+    wp_enqueue_style('wji_main_style', plugin_dir_url( __FILE__ ) . 'assets/css/wji_main.css', null, '1.1.5'); 
+    wp_enqueue_script('wji_select2', plugin_dir_url( __FILE__ ) . 'assets/js/select2.min.js', array('jquery'), '4.0.3' );
+    wp_enqueue_script('wji_main', plugin_dir_url( __FILE__ ) . 'assets/js/wji_main.js', array( 'jquery', 'select2' ), '1.1.53'); 
+}
+add_action('admin_enqueue_scripts', 'enqueue_scripts');
 
 /**
  * Run on plugin activation
  */
-register_activation_hook( __FILE__, 'wji_on_activation' );
-function wji_on_activation() {
-    // Create db tables
+function create_db_tables()
+{
     $tc = new DbTableCreator();
-    $tc->wji_create_product_mapping_table(); // buat table untuk translasi item jurnal dan woo
+    $tc->wji_create_product_mapping_table();
     $tc->wcbc_create_order_sync_table();
 }
+register_activation_hook( __FILE__, 'create_db_tables' );
 
 /**
  * Run on plugin deactivation
  */
-register_deactivation_hook( __FILE__, 'wji_deactivate');
-function wji_deactivate() {
+function clear_plugin_data()
+{
     global $wpdb;
 
     // Clear cached data when settings changes
@@ -59,235 +77,12 @@ function wji_deactivate() {
     delete_transient( 'wji_cached_journal_warehouses' );
 
     // Debug purpose, delete plugin options
-    // delete_option('wji_plugin_general_options');
-    // delete_option('wji_account_mapping_options');
-}
-
-/**
- * Declare compatibility with WooCommerce HPOS feature
- */
-add_action( 'before_woocommerce_init', function() {
-    if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
-        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
-    }
-} );
-
-/* ------------------------------------------------------------------------ *
- * WooCommerce Hooks
- * ------------------------------------------------------------------------ */
-
-/**
- * Fungsi ini dipanggil setelah checkout berhasil via web
- * Full process see sync flow screenshot
-*/
-add_action( 'woocommerce_thankyou', 'wji_run_sync_process', 10, 1 );
-
-/**
- * Fungsi ini dipanggil ketika status order dirubah menjadi processing
- * Full process see sync flow screenshot
-*/
-add_action( 'woocommerce_order_status_processing', 'wji_run_sync_process', 10, 1 );
-
-/**
- * Fungsi untuk menjalankan proses sync
- *
-*/
-function wji_run_sync_process( $order_id ) {
-    global $wpdb;
-    
-    $api = new \Saksono\Woojurnal\Api\JurnalApi();
-    $options = get_option('wji_plugin_general_options');
-
-    // Check if order is paid
-    $order = wc_get_order( $order_id );
-
-    if( $order->is_paid() ) {
-        
-        // Validate apakah sudah pernah sync
-        $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_PAID"';
-        $get_order_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$order_sync_where}");
-        
-        if( ! $get_order_sync ) {
-
-            // Create new sync action
-            $wpdb->insert( $api->getSyncTableName(), [
-                'wc_order_id' => $order_id,
-                'sync_action' => 'JE_PAID',
-                'sync_status' => 'PENDING'
-            ]);
-
-            // Run sync process
-            wji_sync_journal_entry( $wpdb->insert_id, $order_id );
-        }
-
-    } else {
-        
-        // Validate apakah sudah pernah sync
-        $order_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="JE_UNPAID"';
-        $get_order_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$order_sync_where}");
-        
-        if( ! $get_order_sync ) {
-
-            // Create new sync action
-            $wpdb->insert( $api->getSyncTableName(), [
-                'wc_order_id' => $order_id,
-                'sync_action' => 'JE_UNPAID',
-                'sync_status' => 'PENDING'
-            ]);
-
-            // Run sync process
-            wji_sync_journal_entry( $wpdb->insert_id, $order_id );
-        }
-    }  
-
-    // 2. Sync stock adjustment if enabled
-    if( isset($options['sync_stock']) ) {
-
-        // Validate apakah sudah pernah sync
-        $stock_sync_where = 'WHERE wc_order_id='.$order_id.' AND sync_status="SYNCED" AND sync_action="SA_CREATE"';
-        $get_stock_sync = $wpdb->get_row("SELECT * FROM {$api->getSyncTableName()} {$stock_sync_where}");
-           
-        if( ! $get_stock_sync ) {
-            
-            // Add new sync record if haven't synced yet
-            $wpdb->insert( $api->getSyncTableName(), [
-                'wc_order_id' => $order_id,
-                'sync_action' => 'SA_CREATE',
-                'sync_status' => 'PENDING'
-            ]);
-
-            // Run sync process
-            wji_sync_stock_adjustment( $wpdb->insert_id, $order_id );
-        }
+    if ( true === WP_DEBUG ) {
+        delete_option('wji_plugin_general_options');
+        delete_option('wji_account_mapping_options');
     }
 }
-
-/**
- * Fungsi ini dipanggil setelah order status berubah menjadi Cancelled
- *
-*/
-add_action( 'woocommerce_order_status_cancelled', 'wji_update_order_cancelled', 10, 1 );
-function wji_update_order_cancelled( $order_id ) {
-    global $wpdb;
-    write_log('Update order cancelled Order #'.$order_id);
-
-    $order = wc_get_order( $order_id );
-    $api = new \Saksono\Woojurnal\Api\JurnalApi();
-    
-    // Check if order meta exists
-    if( $journal_entry_id = $order->get_meta( $api->getJournalEntryMetaKey(), true )  ) {
-
-        // 1. Add delete journal entry sync record
-        $wpdb->insert( $api->getSyncTableName(), [
-            'wc_order_id' => $order_id,
-            'jurnal_entry_id' => $journal_entry_id,
-            'sync_action' => 'JE_DELETE',
-            'sync_status' => 'PENDING'
-        ]);
-
-        $desync_journal_entry_id = $wpdb->insert_id;
-
-        // Run desync process
-        $run_desync_journal_entry = wji_desync_journal_entry( $desync_journal_entry_id, $order_id );
-
-        // 2. Check apakah ada data stock adjustment
-        if( $stock_adjustment_id = $order->get_meta( $api->getStockMetaKey(), true )  ) {
-
-            // Add delete stock adjusment sync record
-            $wpdb->insert( $api->getSyncTableName(), [
-                'wc_order_id' => $order_id,
-                'stock_adj_id' => $stock_adjustment_id,
-                'sync_action' => 'SA_DELETE',
-                'sync_status' => 'PENDING'
-            ]);
-
-            $desync_stock_adjustment_id = $wpdb->insert_id;
-
-            // Run desync process
-            $run_desync_stock_adjustment = wji_desync_stock_adjustment( $desync_stock_adjustment_id, $order_id );
-        }
-    }      
-}
-
-/**
- * Fungsi ini dipanggil ketika ada product yang di modify
- *
-*/
-add_action( 'save_post_product', 'wji_check_new_product', 10, 3 );
-function wji_check_new_product( $post_id, $post, $update ){
-    global $wpdb;
-
-    // Get a WC_Product object https://woocommerce.github.io/code-reference/classes/WC-Product.html
-    $product = wc_get_product( $post_id );
-    if( !$product ) {
-        return;
-    }
-
-    // Add new product mapping record
-    $table_name = $wpdb->prefix . 'wji_product_mapping';
-    $id = $product->get_id();
-    $data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$id}");
-    if(count($data) < 1) {
-        $wpdb->insert($table_name, ['wc_item_id' => $id, 'jurnal_item_id' => null]);
-    }
-
-    // Check for product variations
-    if ( $product->is_type( "variable" ) ) {
-        $childrens = $product->get_children();
-        if(count($childrens) > 0) {
-            foreach ( $childrens as $child_id ) {
-                $variation = wc_get_product( $child_id ); 
-                if ( ! $variation || ! $variation->exists() ) {
-                    continue;
-                }
-                $data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$child_id}");
-                if(count($data) < 1) {
-                    $wpdb->insert($table_name, ['wc_item_id' => $child_id, 'jurnal_item_id' => null]);
-                }
-            }
-        }
-    }
-}
-
-/**
- * Fungsi ini dipanggil ketika ada product yang di hapus
- *
-*/
-add_action( 'before_delete_post', 'wji_delete_product', 10, 1 );
-function wji_delete_product( $post_id ) {
-    global $wpdb;
-
-    $product = wc_get_product($post_id);
-    if ( empty($product) ) {
-        return;
-    }
-
-    // Delete product
-    $table_name = $wpdb->prefix . 'wji_product_mapping';
-    $product = wc_get_product($post_id);
-    $id = $product->get_id();
-    $data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$id}");
-    if(count($data) < 1) {
-        $wpdb->delete($table_name, ['wc_item_id' => $id]);
-    }
-
-    // Check for product variations
-    if ( $product->is_type( "variable" ) ) {
-        $childrens = $product->get_children();
-        if(count($childrens) > 0) {
-            foreach ( $childrens as $child_id ) {
-                $variation = wc_get_product( $child_id ); 
-                if ( ! $variation || ! $variation->exists() ) {
-                    continue;
-                }
-                $data = $wpdb->get_results("SELECT id FROM $table_name WHERE wc_item_id = {$child_id}");
-                if(count($data) < 1) {
-                    $wpdb->delete($table_name, ['wc_item_id' => $child_id]);
-                }
-            }
-        }
-    }
-}
+register_deactivation_hook( __FILE__, 'clear_plugin_data');
 
 /* ------------------------------------------------------------------------ *
  * SYNC functions
@@ -592,22 +387,6 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
 
         }
     }
-    
-}
-
-/* ------------------------------------------------------------------------ *
- * Enqueue Plugin Scripts
- * ------------------------------------------------------------------------ */
-
-add_action( 'admin_enqueue_scripts', 'wji_enqueue_scripts' );
-function wji_enqueue_scripts(){
-    // CSS
-    wp_enqueue_style('wji_select2_style', plugin_dir_url( __FILE__ ) . 'assets/css/select2.min.css', null, '4.0.3' );
-    wp_enqueue_style('wji_main_style', plugin_dir_url( __FILE__ ) . 'assets/css/wji_main.css', null, '1.1.5'); 
-    
-    // JS
-    wp_enqueue_script('wji_select2', plugin_dir_url( __FILE__ ) . 'assets/js/select2.min.js', array('jquery'), '4.0.3' );
-    wp_enqueue_script('wji_main', plugin_dir_url( __FILE__ ) . 'assets/js/wji_main.js', array( 'jquery', 'select2' ), '1.1.53'); 
 }
 
 /* ------------------------------------------------------------------------ *

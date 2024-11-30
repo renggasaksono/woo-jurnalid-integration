@@ -268,4 +268,3 @@ class TableList extends \WP_List_Table {
 		}
 	}
 }
-?>
