@@ -13,6 +13,7 @@ class SettingsPage {
         add_filter('plugin_action_links', [$this, 'plugin_settings_link'], 10, 2);
         add_action('admin_menu', [$this, 'create_settings_menu']);
         add_action('admin_init', [$this, 'initialize_general_options']);
+        add_action('update_option_wji_plugin_general_options', [$this, 'on_option_update'], 10, 2);
 	}
 
     /**
@@ -95,10 +96,6 @@ class SettingsPage {
             </h2>
             
             <?php
-                // Check API key valid
-                $api = new JurnalApi;
-                $validApi = $api->checkApiKeyValid();
-
                 if( $active_tab == 'general_options' ) {
                     echo '<form method="post" action="options.php">';
                     settings_fields( 'wji_plugin_general_options' );
@@ -107,24 +104,15 @@ class SettingsPage {
                     submit_button('Simpan Pengaturan');
                     echo '</form>';
                 } elseif( $active_tab == 'account_options' ) {
-                    if( !$validApi ) { echo '<p>API Key tidak valid. Harap mengisi Pengaturan Aplikasi Jurnal.ID terlebih dahulu.</p>'; }
-                    else {
-                        echo '<form method="post" action="options.php">';
-                        settings_fields( 'wji_account_mapping_options' );
-                        do_settings_sections( 'wji_plugin_account_options' );
-                        submit_button('Simpan Pengaturan');
-                        echo '</form>';
-                    }
+                    echo '<form method="post" action="options.php">';
+                    settings_fields( 'wji_account_mapping_options' );
+                    do_settings_sections( 'wji_plugin_account_options' );
+                    submit_button('Simpan Pengaturan');
+                    echo '</form>';
                 } elseif( $active_tab == 'product_options' ) {
-                    if( !$validApi ) { echo '<p>API Key tidak valid. Harap mengisi Pengaturan Aplikasi Jurnal.ID terlebih dahulu.</p>'; }
-                    else {
-                        do_settings_sections( 'wji_plugin_product_mapping_options' );
-                    }
+                    do_settings_sections( 'wji_plugin_product_mapping_options' );
                 } elseif( $active_tab == 'order_options' ) {
-                    if( !$validApi ) { echo '<p>API Key tidak valid. Harap mengisi Pengaturan Aplikasi Jurnal.ID terlebih dahulu.</p>'; }
-                    else {
-                        do_settings_sections( 'wji_plugin_order_sync_options' );
-                    }
+                    do_settings_sections( 'wji_plugin_order_sync_options' );
                 }
             ?>
         </div>
@@ -143,7 +131,7 @@ class SettingsPage {
         // Register a section
         add_settings_section(
             'general_settings_section',
-            'Pengaturan Aplikasi',
+            'Pengaturan API',
             [$this, 'general_section_callback'],
             'wji_plugin_general_options'
         );
@@ -219,7 +207,14 @@ class SettingsPage {
 
     public function general_section_callback()
     {
-        echo '<p>Masukan kredential dari aplikasi yang didaftarkan di <a href="https://developers.mekari.com/dashboard/applications" title="Mekari Developer" target="_blank">Mekari Developer</a></p>';
+        if( ! get_option( 'wji_plugin_api_valid', false ) ) {
+            echo '<p>Masukan kredential dari aplikasi yang didaftarkan di <a href="https://developers.mekari.com/dashboard/applications" title="Mekari Developer" target="_blank">Mekari Developer</a></p>';
+        }
+
+        if( $profile_name = get_option( 'wji_plugin_profile_full_name', false ) ) {
+            echo '<p>Successfully connected to Jurnal.ID. Welcome, '.$profile_name.' &#128075;</p>';
+        }
+            
     }
 
     public function tax_section_callback() {
@@ -277,29 +272,23 @@ class SettingsPage {
     }
 
     public function wh_id_callback($args) {
-        $api = new JurnalApi();
-        if ( !$api->checkApiKeyValid() ) {
-            echo 'API Key tidak valid.';
-        } else {
-    
-            $get_options = get_option('wji_plugin_general_options');
-            $field_name = 'wh_id';
-            if ( !array_key_exists($field_name,$get_options) ) {
-                $get_options[$field_name] = '';
-            }
-            $options = $get_options;
-    
-            $html = '<select name="wji_plugin_general_options[wh_id]" class="wj-warehouses-select2">';
-            $html .= '<option></option>';
-            if( $warehouses = get_transient( 'wji_cached_journal_warehouses' ) ) {
-                foreach ($warehouses as $wh) {
-                    $html .= '<option value="' . esc_html( $wh['id'] ) . '"'
-                     . selected( $options[$field_name], $wh['id'], false ) . '>'
-                     . esc_html( $wh['text'] ) . '</option>';
-                }
-            }
-            echo $html;
+        $get_options = get_option('wji_plugin_general_options');
+        $field_name = 'wh_id';
+        if ( !array_key_exists($field_name,$get_options) ) {
+            $get_options[$field_name] = '';
         }
+        $options = $get_options;
+
+        $html = '<select name="wji_plugin_general_options[wh_id]" class="wj-warehouses-select2">';
+        $html .= '<option></option>';
+        if( $warehouses = get_transient( 'wji_cached_journal_warehouses' ) ) {
+            foreach ($warehouses as $wh) {
+                $html .= '<option value="' . esc_html( $wh['id'] ) . '"'
+                    . selected( $options[$field_name], $wh['id'], false ) . '>'
+                    . esc_html( $wh['text'] ) . '</option>';
+            }
+        }
+        echo $html;
     }
 
     /* ------------------------------------------------------------------------ *
@@ -315,12 +304,23 @@ class SettingsPage {
                 $output[$key] = strip_tags( stripslashes( $input[ $key ] ) );
             }
         }
-        
+
+        return $output;
+    }
+
+    public function on_option_update($old_value, $new_value) {
+
         // Clear cached data when settings changes
         delete_transient( 'wji_cached_journal_products' );
         delete_transient( 'wji_cached_journal_account' );
         delete_transient( 'wji_cached_journal_warehouses' );
 
-        return $output;
-    }
+        // Clear option
+        update_option( 'wji_plugin_api_valid', false );
+        update_option( 'wji_plugin_profile_full_name', false );
+
+        // Check API key valid
+        $api = new JurnalApi;
+        $validApi = $api->checkApiKeyValid();
+    }   
 }

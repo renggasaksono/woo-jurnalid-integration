@@ -86,7 +86,8 @@ jQuery(function($){
 	// Account mapping
 	$('.wj-accounts-select2').select2({
 		placeholder: 'Pilih Akun Jurnal.ID',
-      	allowClear: true
+      	allowClear: true,
+		width : '50%'
 	});
 
 	// Warehouse mapping
