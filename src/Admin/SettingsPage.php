@@ -212,7 +212,7 @@ class SettingsPage {
         }
 
         if( $profile_name = get_option( 'wji_plugin_profile_full_name', false ) ) {
-            echo '<p>Successfully connected to Jurnal.ID. Welcome, '.$profile_name.' &#128075;</p>';
+            echo '<p>Successfully connected to Jurnal.ID. Welcome, <b>'.$profile_name.'</b> &#128075;</p>';
         }
             
     }

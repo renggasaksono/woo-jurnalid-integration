@@ -1,5 +1,12 @@
 {
     "name": "saksono/woo-jurnalid-integration",
+    "description": "ntegrasi data pemesanan dan stok produk dari WooCommerce ke Jurnal.ID.",
+    "type": "wordpress-plugin",
+    "keywords": [
+		"wordpress",
+		"woocommerce",
+        "jurnal.id"
+	],
     "authors": [
         {
             "name": "Rengga Saksono",
@@ -11,6 +18,6 @@
         "nesbot/carbon": "^2.54"
     },
     "autoload": {
-        "psr-4": {"Saksono\\Woojurnal\\": "includes/"}
+        "psr-4": {"Saksono\\Woojurnal\\": "src/"}
     }
 }
