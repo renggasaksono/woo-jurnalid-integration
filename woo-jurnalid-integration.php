@@ -8,7 +8,7 @@
  * Author URI:              https://id.linkedin.com/in/renggasaksono
  * License:                 GPL v2 or later
  * License URI:             https://www.gnu.org/licenses/gpl-2.0.html
- * WC requires at least:    3.4
+ * WC requires at least:    7.1
  * WC tested up to:         8.2
  * Requires Plugins:        woocommerce
  */
@@ -58,6 +58,15 @@ function wji_deactivate() {
     // delete_option('wji_plugin_general_options');
     // delete_option('wji_account_mapping_options');
 }
+
+/**
+ * Declare compatibility with WooCommerce HPOS feature
+ */
+add_action( 'before_woocommerce_init', function() {
+    if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+    }
+} );
 
 /* ------------------------------------------------------------------------ *
  * Setting Registration
@@ -520,10 +529,11 @@ function wji_update_order_cancelled( $order_id ) {
     global $wpdb;
     write_log('Update order cancelled Order #'.$order_id);
 
+    $order = wc_get_order( $order_id );
     $api = new \Saksono\Woojurnal\JurnalApi();
     
     // Check if order meta exists
-    if( $journal_entry_id = get_post_meta( $order_id, $api->getJournalEntryMetaKey(), true )  ) {
+    if( $journal_entry_id = $order->get_meta( $api->getJournalEntryMetaKey(), true )  ) {
 
         // 1. Add delete journal entry sync record
         $wpdb->insert( $api->getSyncTableName(), [
@@ -539,7 +549,7 @@ function wji_update_order_cancelled( $order_id ) {
         $run_desync_journal_entry = wji_desync_journal_entry( $desync_journal_entry_id, $order_id );
 
         // 2. Check apakah ada data stock adjustment
-        if( $stock_adjustment_id = get_post_meta( $order_id, $api->getStockMetaKey(), true )  ) {
+        if( $stock_adjustment_id = $order->get_meta( $api->getStockMetaKey(), true )  ) {
 
             // Add delete stock adjusment sync record
             $wpdb->insert( $api->getSyncTableName(), [
@@ -605,7 +615,8 @@ add_action( 'before_delete_post', 'wji_delete_product', 10, 1 );
 function wji_delete_product( $post_id ) {
     global $wpdb;
 
-    if ( get_post_type( $post_id ) != 'product' ) {
+    $product = wc_get_product($post_id);
+    if ( empty($product) ) {
         return;
     }
 
@@ -667,7 +678,7 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
     if( $get_sync_data->sync_action == 'JE_PAID' ) {
 
         // Validate if previous UNPAID journal entry has been created, we need to format the data to reverse and balance the previous record
-        if( ! get_post_meta( $order->get_id(), $api->getUnpaidMetaKey(), true )  ) {
+        if( ! $order->get_meta($api->getUnpaidMetaKey(),true) ) {
             $data = $api->get_paid_sync_data( $order );
         } else {
             $data = $api->get_payment_sync_data( $order );
@@ -695,8 +706,8 @@ function wji_sync_journal_entry( int $sync_id, int $order_id ) {
         $sync_data['sync_at']           = date("Y-m-d H:i:s");
 
         // Update post order metadata
-        update_post_meta( $order->get_id(), $api->getJournalEntryMetaKey(), $do_sync->journal_entry->id );
-        update_post_meta( $order->get_id(), $api->getUnpaidMetaKey(), $do_sync->journal_entry->id );
+        $order->update_meta_data( $api->getJournalEntryMetaKey(), $do_sync->journal_entry->id );
+        $order->update_meta_data( $api->getUnpaidMetaKey(), $do_sync->journal_entry->id );
 
     } else {
         
@@ -720,10 +731,11 @@ function wji_desync_journal_entry( int $sync_id, int $order_id ) {
     global $wpdb;
     write_log('Desync journal entry #'.$sync_id);
     
+    $order = wc_get_order( $order_id );
     $api = new \Saksono\Woojurnal\JurnalApi();
     
     // Delete journal entry if exists
-    $journal_entry_id = get_post_meta( $order_id, $api->getJournalEntryMetaKey(), true );
+    $journal_entry_id = $order->get_meta( $api->getJournalEntryMetaKey(), true );
     
     if( $journal_entry_id ) {
 
@@ -859,7 +871,7 @@ function wji_sync_stock_adjustment( int $sync_id, int $order_id ) {
         if( isset($postStockAdjustments->stock_adjustment) ) {
             
             // Update post order metadata
-            update_post_meta( $order_id, $api->getStockMetaKey(), $postStockAdjustments->stock_adjustment->id );
+            $order->update_meta_data( $api->getStockMetaKey(), $postStockAdjustments->stock_adjustment->id );
 
             return $wpdb->update( $api->getSyncTableName(), [
                     'stock_adj_id'  => $postStockAdjustments->stock_adjustment->id,
@@ -905,9 +917,10 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
     write_log('Desync stock adjustment #'.$sync_id);
 
     $api = new \Saksono\Woojurnal\JurnalApi();
+    $order = wc_get_order( $order_id );
 
     // Delete journal entry if exists
-    $stock_adjustment_id = get_post_meta( $order_id, $api->getStockMetaKey(), true );
+    $stock_adjustment_id = $order->get_meta( $api->getStockMetaKey(), true );
     
     if( $stock_adjustment_id ) {
 
