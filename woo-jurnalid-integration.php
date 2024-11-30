@@ -693,14 +693,6 @@ function wji_desync_stock_adjustment( int $sync_id, int $order_id ) {
 }
 
 /* ------------------------------------------------------------------------ *
- * WP AJAX Calls
- * ------------------------------------------------------------------------ */
-
-add_action( 'wp_ajax_wji_translasi_item_save', ['\Saksono\Woojurnal\AjaxCallback', 'wji_save_item_ajax_callback'] ); // ajax save mapping item
-add_action( 'wp_ajax_wji_check_used_item', ['\Saksono\Woojurnal\AjaxCallback', 'wji_check_used_item_ajax_callback'] ); // ajax cek mapping jika sudah digunakan
-add_action( 'wp_ajax_wji_select2_products', ['\Saksono\Woojurnal\AjaxCallback', 'wji_get_jurnal_products_callback'] ); // ajax get select2 products resource
-
-/* ------------------------------------------------------------------------ *
  * Enqueue Plugin Scripts
  * ------------------------------------------------------------------------ */
 

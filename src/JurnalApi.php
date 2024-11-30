@@ -88,7 +88,7 @@ class JurnalApi {
 		return false;
 	}
 
-	// Used by AjaxCallback:wji_get_jurnal_products_callback()
+	// Used by ProductMapping:get_jurnal_products_callback()
 	public function getAllJurnalItems($params) {
 
 		$page = isset($params['page']) ? $params['page'] : 1;

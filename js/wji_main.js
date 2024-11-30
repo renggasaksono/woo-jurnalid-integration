@@ -47,7 +47,7 @@ jQuery(function($){
   					let conf = true;
   					let data = JSON.parse(resp);
   					if(data.status) {
-  						let error = "Item ini sudah pernah di translasikan:\n";
+  						let error = "Produk ini sudah digunakan di :\n";
   						for (index = 0; index < (data.data).length; ++index) {
   							error += "- "+data.data[index]+"\n";
 						}

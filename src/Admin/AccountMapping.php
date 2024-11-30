@@ -124,7 +124,7 @@ class AccountMapping {
         // Check if cached data available
         if( false === ( get_transient( 'wji_cached_journal_account' ) ) ) {
             // Set list of accounts for future uses
-            $api = new \Saksono\Woojurnal\JurnalApi();
+            $api = new JurnalApi();
             if( $accounts = $api->getAllJurnalAccounts() ) {
                 set_transient( 'wji_cached_journal_account', $accounts, 7 * DAY_IN_SECONDS );
             }
