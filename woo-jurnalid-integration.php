@@ -21,14 +21,14 @@ use Saksono\Woojurnal\DbTableCreator;
 use Saksono\Woojurnal\Admin\Setting\SettingsPage;
 use Saksono\Woojurnal\Admin\Setting\AccountMapping;
 use Saksono\Woojurnal\Admin\Setting\ProductMapping;
-use Saksono\Woojurnal\Admin\Setting\OrderSync;
+use Saksono\Woojurnal\Admin\Setting\SyncHistory;
 
 // Initialize the plugin
 add_action('plugins_loaded', function () {
     new SettingsPage();
     new AccountMapping();
     new ProductMapping();
-    new OrderSync();
+    new SyncHistory();
 });
 
 /* ------------------------------------------------------------------------ *

@@ -7,7 +7,7 @@ defined( 'ABSPATH' ) || exit;
 use Saksono\Woojurnal\Api\JurnalApi;
 use Saksono\Woojurnal\Admin\TableList;
 
-class OrderSync {
+class SyncHistory {
 
     public function __construct()
     {
