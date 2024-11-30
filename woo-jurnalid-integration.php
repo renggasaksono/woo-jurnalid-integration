@@ -17,10 +17,11 @@ defined( 'ABSPATH' ) || exit;
 
 require_once(plugin_dir_path(__FILE__) . '/vendor/autoload.php');
 
-use Saksono\Woojurnal\Admin\SettingsPage;
-use Saksono\Woojurnal\Admin\AccountMapping;
-use Saksono\Woojurnal\Admin\ProductMapping;
-use Saksono\Woojurnal\Admin\OrderSync;
+use Saksono\Woojurnal\DbTableCreator;
+use Saksono\Woojurnal\Admin\Setting\SettingsPage;
+use Saksono\Woojurnal\Admin\Setting\AccountMapping;
+use Saksono\Woojurnal\Admin\Setting\ProductMapping;
+use Saksono\Woojurnal\Admin\Setting\OrderSync;
 
 // Initialize the plugin
 add_action('plugins_loaded', function () {
@@ -40,7 +41,7 @@ add_action('plugins_loaded', function () {
 register_activation_hook( __FILE__, 'wji_on_activation' );
 function wji_on_activation() {
     // Create db tables
-    $tc = new \Saksono\Woojurnal\DbTableCreator();
+    $tc = new DbTableCreator();
     $tc->wji_create_product_mapping_table(); // buat table untuk translasi item jurnal dan woo
     $tc->wcbc_create_order_sync_table();
 }
@@ -97,7 +98,7 @@ add_action( 'admin_init', 'wji_intialize_order_sync_options' );
 function wji_order_sync_callback() {
     global $wpdb;
 
-    $tablelist = new \Saksono\Woojurnal\TableList();
+    $tablelist = new \Saksono\Woojurnal\Admin\TableList();
     $api = new \Saksono\Woojurnal\JurnalApi();
 
     // Retry sync function

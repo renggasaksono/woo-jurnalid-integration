@@ -1,11 +1,11 @@
 <?php
 
-namespace Saksono\Woojurnal\Admin;
+namespace Saksono\Woojurnal\Admin\Setting;
 
 defined( 'ABSPATH' ) || exit;
 
 use Saksono\Woojurnal\JurnalApi;
-use Saksono\Woojurnal\TableList;
+use Saksono\Woojurnal\Admin\TableList;
 
 class OrderSync {
 
@@ -36,7 +36,7 @@ class OrderSync {
         global $wpdb;
 
         $tablelist = new TableList();
-        $api = new urnalApi();
+        $api = new JurnalApi();
     
         // Retry sync function
         if ( isset($_GET['_wjinonce']) || wp_verify_nonce( isset($_GET['_wjinonce']), 'retry_sync' ) || is_numeric( isset($_GET[ '_syncid' ]) ) ) {

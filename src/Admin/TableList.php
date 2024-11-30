@@ -1,6 +1,6 @@
 <?php
 
-namespace Saksono\Woojurnal;
+namespace Saksono\Woojurnal\Admin;
 
 defined( 'ABSPATH' ) || exit;
 

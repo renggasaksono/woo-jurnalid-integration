@@ -1,6 +1,6 @@
 <?php
 
-namespace Saksono\Woojurnal\Admin;
+namespace Saksono\Woojurnal\Admin\Setting;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -120,7 +120,6 @@ class AccountMapping {
     * ------------------------------------------------------------------------ */
 
     public function account_mapping_callback() {
-        echo '<p>Map WooCommerce payment gateways to Jurnal.ID accounts.</p>';
         // Check if cached data available
         if( false === ( get_transient( 'wji_cached_journal_account' ) ) ) {
             // Set list of accounts for future uses
