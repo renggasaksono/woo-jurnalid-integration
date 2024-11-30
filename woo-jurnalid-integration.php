@@ -20,13 +20,14 @@ require_once(plugin_dir_path(__FILE__) . '/vendor/autoload.php');
 use Saksono\Woojurnal\Admin\SettingsPage;
 use Saksono\Woojurnal\Admin\AccountMapping;
 use Saksono\Woojurnal\Admin\ProductMapping;
+use Saksono\Woojurnal\Admin\OrderSync;
 
 // Initialize the plugin
 add_action('plugins_loaded', function () {
     new SettingsPage();
     new AccountMapping();
     new ProductMapping();
-    // new OrderSync();
+    new OrderSync();
 });
 
 /* ------------------------------------------------------------------------ *
