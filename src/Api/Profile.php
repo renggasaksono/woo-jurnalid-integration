@@ -11,10 +11,10 @@ class Profile {
 	private $mekariRequest;
 
 	public function __construct() {
-		$this->mekariRequest = new MekariRequest;
+		$this->mekariRequest = new MekariRequest();
 	}
 
-	public function checkApiKeyValid() {
+	public function getProfile() {
 		
 		// Make a simple test API request
 		$response = $this->mekariRequest->make(

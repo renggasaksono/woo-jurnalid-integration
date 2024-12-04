@@ -6,15 +6,21 @@ defined( 'ABSPATH' ) || exit;
 
 use Saksono\Woojurnal\Api\Product as ProductApi;
 use Saksono\Woojurnal\Admin\TableList;
+use Saksono\Woojurnal\Model\ProductMapping as ProductModel;
 
 class ProductMapping {
 
+	private $api;
+	private $product_mapping_model;
+
     public function __construct()
     {
+		$this->product_mapping_model = new ProductModel();
+
         add_action('admin_init', [$this, 'intialize_product_mapping']);
-        add_action('wp_ajax_wji_translasi_item_save', [$this, 'save_item_ajax_callback']); // ajax save mapping item
-        add_action('wp_ajax_wji_check_used_item', [$this, 'check_used_item_ajax_callback']); // ajax cek mapping jika sudah digunakan
-        add_action('wp_ajax_wji_select2_products', [$this, 'get_jurnal_products_callback']); // ajax get select2 products resource
+        add_action('wp_ajax_wji_translasi_item_save', [$this, 'save_item_ajax_callback']);
+        add_action('wp_ajax_wji_check_used_item', [$this, 'check_used_item_ajax_callback']);
+        add_action('wp_ajax_wji_select2_products', [$this, 'get_jurnal_products_callback']);
 	}
 
     /**
@@ -26,21 +32,17 @@ class ProductMapping {
         add_settings_section(
             'product_settings_section',             // ID used to identify this section and with which to register options
             '',                                     // Title to be displayed on the administration page
-            [$this, 'product_mapping_callback'],         // Callback used to render the description of the section
+            [$this, 'product_mapping_callback'],   	// Callback used to render the description of the section
             'wji_plugin_product_mapping_options'    // Page on which to add this section of options
         );
     }
-
-    /* ------------------------------------------------------------------------ *
-    * Section Callbacks
-    * ------------------------------------------------------------------------ */
 
     public function product_mapping_callback() {
         global $wpdb;
         $tablelist = new TableList();
 
         $data = [];
-        $table_name = $wpdb->prefix . 'wji_product_mapping';
+        $table_name = $this->product_mapping_model->getTableName();
         $table_post = $wpdb->prefix . 'posts';
         $offset = $tablelist->getPerpage() * ($tablelist->get_pagenum() - 1);
         $where = '';
@@ -63,30 +65,27 @@ class ProductMapping {
     * ------------------------------------------------------------------------ */
 
     public static function get_jurnal_products_callback() {
-		// Set params
 		$params = [];
 		$params['page'] = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : 1;
 		$params['q'] = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
 		// write_log($params);
 
-		// Iniate API class
 		$api = new ProductApi();
-		$response = $api->getAllJurnalItems($params);
+		$response = $api->getAll($params);
 		echo $response;
 		wp_die();
 	}
 
     public static function save_item_ajax_callback(){
 		global $wpdb;
+		$instance = new self();
 
-		$table_name = $wpdb->prefix . 'wji_product_mapping';
-		$update = $wpdb->update($table_name, [
-				'jurnal_item_id' => (int) sanitize_text_field($_POST['jurnal_item_id']), 
-				'jurnal_item_code' => sanitize_text_field($_POST['jurnal_item_code'])
-			], 
-			[
-				'wc_item_id' => (int) sanitize_text_field($_POST['wc_item_id'])
-			]);
+		$update = $instance->product_mapping_model->update(
+			$_POST['wc_item_id'],
+			$_POST['jurnal_item_id'],
+			$_POST['jurnal_item_code']
+		);
+		write_log($update);
 
 		if($update) {
 			esc_html_e($_POST['jurnal_item_code']);wp_die();

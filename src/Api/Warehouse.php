@@ -11,10 +11,10 @@ class Warehouse {
 	private $mekariRequest;
 
 	public function __construct() {
-		$this->mekariRequest = new MekariRequest;
+		$this->mekariRequest = new MekariRequest();
 	}
 
-	public function getAllJurnalWarehouses() {
+	public function getAll() {
 
 		// Make request
 		$response = $this->mekariRequest->make(

@@ -145,9 +145,6 @@ class TableList extends \WP_List_Table {
 			case 'JE_UNPAID':
 				$status = 'Create journal entry';
 				break;
-			case 'JE_UPDATE':
-				$status = 'Update journal entry';
-				break;
 			case 'JE_DELETE':
 				$status = 'Delete journal entry';
 				break;
@@ -195,13 +192,6 @@ class TableList extends \WP_List_Table {
 						$je_id = $item->jurnal_entry_id;
 						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank" title="View on Jurnal.ID">'.$je_id.'</a>';
 						$message = 'Journal entry succesfully created '.$link;
-						break;
-					}
-				case 'JE_UPDATE':
-					if($item->sync_status == 'SYNCED') {
-						$je_id = $item->jurnal_entry_id;
-						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank" title="View on Jurnal.ID">'.$je_id.'</a>';
-						$message = 'Journal entry succesfully updated '.$link;
 						break;
 					}
 				case 'JE_DELETE':

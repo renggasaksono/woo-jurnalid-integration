@@ -11,10 +11,10 @@ class Account {
 	private $mekariRequest;
 
 	public function __construct() {
-		$this->mekariRequest = new MekariRequest;
+		$this->mekariRequest = new MekariRequest();
 	}
 
-	public function getAllJurnalAccounts() {
+	public function getAll() {
 
 		// Make request
 		$response = $this->mekariRequest->make(
@@ -38,7 +38,7 @@ class Account {
 		return false;
 	}
 
-	public function getJurnalAccountName( $account_id ) {
+	public function getAccountName( $account_id ) {
 
 		// Make request
 		$response = $this->mekariRequest->make(

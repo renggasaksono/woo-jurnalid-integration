@@ -11,37 +11,26 @@ class StockAdjustment {
 	private $mekariRequest;
 
 	public function __construct() {
-		$this->mekariRequest = new MekariRequest;
+		$this->mekariRequest = new MekariRequest();
 	}
 
-	public function postStockAdjustments($data) {
+	public function create($data) {
 		write_log($data);
-
-		// Make request
 		$response = $this->mekariRequest->make(
 			'POST',
 			'/public/jurnal/api/v1/stock_adjustments',
 			'',
 			$data
 		);
-
-		$response = json_decode($response['body']);
 		write_log($response);
 		return $response;
 	}
 
-	public function deleteStockAdjustments( $stock_adj_id ) {
-		write_log($data);
-
-		// Make request
+	public function delete( $stock_adj_id ) {
 		$response = $this->mekariRequest->make(
 			'DELETE',
-			'/public/jurnal/api/v1/stock_adjustments/'.$stock_adj_id,
-			'',
-			$data
+			'/public/jurnal/api/v1/stock_adjustments/'.$stock_adj_id
 		);
-
-		$response = json_decode($response['body']);
 		write_log($response);
 		return $response;
 	}

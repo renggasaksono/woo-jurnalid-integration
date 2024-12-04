@@ -11,11 +11,11 @@ class Product {
 	private $mekariRequest;
 
 	public function __construct() {
-		$this->mekariRequest = new MekariRequest;
+		$this->mekariRequest = new MekariRequest();
 	}
 
 	// Used by ProductMapping:get_jurnal_products_callback()
-	public function getAllJurnalItems($params) {
+	public function getAll($params) {
 
 		$page = isset($params['page']) ? $params['page'] : 1;
 		$q = isset($params['q']) ? $params['q'] : '';
@@ -59,7 +59,7 @@ class Product {
 		return false;
 	}
 
-	public function getJurnalProductName( $product_id ) {
+	public function getProductName( $product_id ) {
 
 		// Make request
 		$response = $this->mekariRequest->make(

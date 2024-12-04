@@ -4,21 +4,19 @@ namespace Saksono\Woojurnal\Sync;
 
 defined( 'ABSPATH' ) || exit;
 
-use Saksono\Woojurnal\Api\MekariRequest;
-
 class ProductHandler {
 
 	public function __construct()
     {
-        add_action( 'save_post_product', [$this, 'wji_check_new_product'], 10, 3 );
-        add_action( 'before_delete_post', [$this, 'wji_delete_product'], 10, 1 );
+        add_action( 'save_post_product', [$this, 'check_new_product'], 10, 3 );
+        add_action( 'before_delete_post', [$this, 'delete_product'], 10, 1 );
     }
 
 	/**
      * Fungsi ini dipanggil ketika ada product yang di modify
      *
     */
-    public function wji_check_new_product( $post_id, $post, $update ){
+    public function check_new_product( $post_id, $post, $update ){
         global $wpdb;
 
         // Get a WC_Product object https://woocommerce.github.io/code-reference/classes/WC-Product.html
@@ -57,7 +55,7 @@ class ProductHandler {
      * Fungsi ini dipanggil ketika ada product yang di hapus
      *
     */
-    public function wji_delete_product( $post_id ) {
+    public function delete_product( $post_id ) {
         global $wpdb;
 
         $product = wc_get_product($post_id);

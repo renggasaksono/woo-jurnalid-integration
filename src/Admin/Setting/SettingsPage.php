@@ -223,8 +223,8 @@ class SettingsPage {
         // Check if cached data available
         if( false === ( get_transient( 'wji_cached_journal_warehouses' ) ) ) {
             // Set list of accounts for future uses
-            $api = new WarehouseApi();
-            $warehouses = $api->getAllJurnalWarehouses();
+            $warehouse_api = new WarehouseApi();
+            $warehouses = $warehouse_api->getAll();
             if( $warehouses && count($warehouses)>0 ) {
                 set_transient( 'wji_cached_journal_warehouses', $warehouses, 7 * DAY_IN_SECONDS );
             }
@@ -338,6 +338,6 @@ class SettingsPage {
 
         // Check API key valid
         $api = new ProfileApi();
-        $validApi = $api->checkApiKeyValid();
+        $validApi = $api->getProfile();
     }   
 }
