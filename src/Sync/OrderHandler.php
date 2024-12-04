@@ -76,8 +76,8 @@ class OrderHandler {
 
         $order = wc_get_order( $order_id );
         
-        // if( $journal_entry_id = $order->get_meta($this->journal_entry->getMetaKey(), true)  ) {
-        if( $journal_entry_id = get_post_meta( $order->get_id(), $this->journal_entry->getUnpaidMetaKey(), true )  ) {
+        if( $journal_entry_id = $order->get_meta($this->journal_entry->getMetaKey(), true)  ) {
+        // if( $journal_entry_id = get_post_meta( $order->get_id(), $this->journal_entry->getUnpaidMetaKey(), true )  ) {
             $sync_data = [
                 'wc_order_id' => $order_id,
                 'jurnal_entry_id' => $journal_entry_id,
@@ -88,8 +88,8 @@ class OrderHandler {
             $this->journal_entry->remove_sync( $sync_log->getField('id') );
         }
 
-        if( $stock_adjustment_id = get_post_meta( $order->get_id(), $this->stock_adjustment->getMetaKey(), true )  ) {
-        // if( $stock_adjustment_id = $order->get_meta($this->stock_adjustment->getMetaKey(), true)  ) {
+        // if( $stock_adjustment_id = get_post_meta( $order->get_id(), $this->stock_adjustment->getMetaKey(), true )  ) {
+        if( $stock_adjustment_id = $order->get_meta($this->stock_adjustment->getMetaKey(), true)  ) {
             $sync_data = [
                 'wc_order_id' => $order_id,
                 'stock_adj_id' => $stock_adjustment_id,

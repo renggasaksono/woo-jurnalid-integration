@@ -65,10 +65,9 @@ class JournalEntry {
         if( isset($run_sync['success']) && $run_sync['success']==true ) {
             $body = json_decode($run_sync['body']);
             
-            update_post_meta( $order->get_id(), $this->getMetaKey(), $body->journal_entry->id );
-            update_post_meta( $order->get_id(), $this->getUnpaidMetaKey(), $body->journal_entry->id );
-            // $order->update_meta_data( $this->getMetaKey(), $body->journal_entry->id );
-            // $order->update_meta_data( $this->getUnpaidMetaKey(), $body->journal_entry->id );
+            $order->update_meta_data( $this->getMetaKey(), $body->journal_entry->id );
+            $order->update_meta_data( $this->getUnpaidMetaKey(), $body->journal_entry->id );
+            $order->save();
             
             // Success
             $sync_data = [
@@ -127,8 +126,8 @@ class JournalEntry {
 	 */
 	private function prepare_paid_sync_data($order)
 	{
-        $getMeta = get_post_meta($order->get_id(),$this->getUnpaidMetaKey(), true);
-        // $getMeta = $order->get_meta($this->getUnpaidMetaKey(), true)
+        // $getMeta = get_post_meta($order->get_id(),$this->getUnpaidMetaKey(), true);
+        $getMeta = $order->get_meta($this->getUnpaidMetaKey(), true);
 		// Check if unpaid journal entry exists
         if (!$getMeta) {
 			return $this->api->get_paid_sync_data($order);

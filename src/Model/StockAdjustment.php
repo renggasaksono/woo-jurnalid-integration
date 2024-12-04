@@ -123,8 +123,9 @@ class StockAdjustment {
 
         if( isset($run_sync['success']) && $run_sync['success']==true ) {
             $body = json_decode($run_sync['body']);
-            update_post_meta( $order->get_id(), $this->getMetaKey(), $body->stock_adjustment->id );
-            // $order->update_meta_data($this->getMetaKey(), $body->stock_adjustment->id);
+            
+            $order->update_meta_data($this->getMetaKey(), $body->stock_adjustment->id);
+            $order->save();
 
             // Success
             $sync_data = [
