@@ -86,7 +86,7 @@ class SyncHistory {
     public function retry_sync( $sync_id )
     {
         write_log('Retry sync initiated ...');
-        $log = new SyncLog(sync_id: $sync_id);
+        $log = new SyncLog($sync_id);
         
         if( $log->isSynced() ) {
             return;

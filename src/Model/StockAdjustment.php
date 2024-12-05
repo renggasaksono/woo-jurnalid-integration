@@ -81,7 +81,7 @@ class StockAdjustment {
         global $wpdb;
         write_log('Sync stock adjustment #'.$sync_id);
         
-        $sync_log = new SyncLog(sync_id: $sync_id);
+        $sync_log = new SyncLog($sync_id);
 
         $order = wc_get_order($order_id);
         if (!$order) {
@@ -206,7 +206,7 @@ class StockAdjustment {
         global $wpdb;
         write_log('Desync stock adjustment #'.$sync_id);
 
-        $sync_log = new SyncLog(sync_id: $sync_id);
+        $sync_log = new SyncLog($sync_id);
         $run_sync = $this->stock_adjustment_api->delete( $sync_log->getField('stock_adj_id') );
 
         if( isset($run_sync['success']) && $run_sync['success']==true ) {

@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-require_once(plugin_dir_path(__FILE__) . '/vendor/autoload.php');
+require_once(plugin_dir_path(__FILE__) . '/lib/autoload.php');
 
 use Saksono\Woojurnal\Admin\DbTableCreator;
 use Saksono\Woojurnal\Admin\Setting\SettingsPage;

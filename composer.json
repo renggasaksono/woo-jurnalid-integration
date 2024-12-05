@@ -13,7 +13,14 @@
             "email": "rengga.saksono@gmail.com"
         }
     ],
+    "config": {
+        "vendor-dir": "lib",
+        "platform": {
+            "php": "7.4"
+        }
+    },
     "require": {
+        "php": ">=7.4",
         "guzzlehttp/guzzle": "^7.0",
         "nesbot/carbon": "^2.54"
     },

@@ -40,7 +40,7 @@ class JournalEntry {
         $data = [];
         $sync_data = [];
 
-		$sync_log = new SyncLog(sync_id: $sync_id);
+		$sync_log = new SyncLog($sync_id);
 		$sync_action = $sync_log->getField('sync_action');
 
 		// Prepare data for sync based on action
@@ -98,7 +98,7 @@ class JournalEntry {
         global $wpdb;
         write_log('Remove sync journal entry #'.$sync_id);
         
-		$sync_log = new SyncLog(sync_id: $sync_id);
+		$sync_log = new SyncLog($sync_id);
         $run_sync = $this->api->delete( $sync_log->getField('jurnal_entry_id') );
 
         if( isset($run_sync['success']) && $run_sync['success']==true ) {
