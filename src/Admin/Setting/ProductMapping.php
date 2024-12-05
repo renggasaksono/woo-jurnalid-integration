@@ -53,22 +53,17 @@ class ProductMapping {
         $tablelist->setTotalItem($count);
         $tablelist->setDatas($products);
         $tablelist->setColumns([
-            'wcproductname' => 'Produk pada Woocommerce (SKU - Nama Produk)',
-            'jurnal_item_code' => 'Produk pada Jurnal.ID (SKU - Nama Produk)'
+            'wcproductname' => __( 'WooCommerce Product (SKU - Product Name)', 'wji-plugin' ),
+            'jurnal_item_code' => __( 'Jurnal.ID Product (SKU - Product Name)', 'wji-plugin' ),
         ]);
         
         $tablelist->generate();
     }
 
-    /* ------------------------------------------------------------------------ *
-    * AJAX Callbacks
-    * ------------------------------------------------------------------------ */
-
     public static function get_jurnal_products_callback() {
 		$params = [];
 		$params['page'] = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : 1;
 		$params['q'] = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
-		// write_log($params);
 
 		$api = new ProductApi();
 		$response = $api->getAll($params);

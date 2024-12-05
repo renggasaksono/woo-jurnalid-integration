@@ -32,16 +32,12 @@ class SyncHistory {
     public function initialize_order_sync() {
     
         add_settings_section(
-            'order_sync_section',               // ID used to identify this section and with which to register options
-            '',                                 // Title to be displayed on the administration page
-            [$this, 'order_sync_callback'],     // Callback used to render the description of the section
-            'wji_plugin_order_sync_options'     // Page on which to add this section of options
+            'order_sync_section',
+            '',
+            [$this, 'order_sync_callback'],
+            'wji_plugin_order_sync_options'
         );
     }
-
-    /* ------------------------------------------------------------------------ *
-    * Section Callbacks
-    * ------------------------------------------------------------------------ */
 
     public function order_sync_callback() {
         global $wpdb;
@@ -81,7 +77,6 @@ class SyncHistory {
         $tablelist->generate();
     }
 
-    // Remove retry sync url args
     public function remove_retry_sync_query_args( $args ) {
         $args[] = '_wjinonce';
         $args[] = '_syncid';
@@ -97,7 +92,6 @@ class SyncHistory {
             return;
         }
 
-        // Run sync process
         switch ( $log->getField('sync_action') ) {
             case "JE_CREATE":
             case 'JE_PAID':

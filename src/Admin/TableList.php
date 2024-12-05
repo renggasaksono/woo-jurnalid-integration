@@ -96,30 +96,42 @@ class TableList extends \WP_List_Table {
 	}
 
 	public function column_wcproductname($item) {
-		$pf = new \WC_Product_Factory;
-		$p = $pf->get_product($item->wc_item_id);
-		$sku = $p->get_sku();
-		if( ( $pf = wp_get_post_parent_id( $p->get_id() ) ) !== 0) {
-			return '<i>(Variation)</i> ' . ($sku ? esc_html($sku).' - ' : '').esc_html($p->get_name());
+		
+		$product = wc_get_product($item->wc_item_id);
+		if (!$product) {
+			return '<i>Product not found</i>';
 		}
 		
-		return ($sku ? esc_html($sku).' - ' : '').esc_html($p->get_name());	
+		$name = esc_html($product->get_name());
+		$sku = $product->get_sku() ? esc_html($product->get_sku()) . ' - ' : '';
+		$is_variation = $product->is_type('variation');
+		
+		$output = $is_variation ? '<i>(Variation)</i> ' : '';
+		$output .= $sku . $name;
+		
+		return $output;
 	}
 
 	public function column_jurnal_item_code($item) {
 		$html = '';
 
-		$html .= "<button type='button' class='bc-editable-link'>".esc_html($item->jurnal_item_code ?: '(belum diset)')."</button>";
-		$html .= '<span class="bc-editable-success hidden" style="color:green">&ensp;Tersimpan!</span>';
-		$html .= '<div class="bc-editable-input hidden">';
+		$html .= "<button type='button' class='bc-editable-link'>";
+		$html .= esc_html($item->jurnal_item_code ?: '(Not Set)');
+		$html .= "</button>";
+	
+		$html .= '<span class="bc-editable-success hidden" style="color:green">&ensp;Saved!</span>';
+		$html .= '<div class="bc-editable-input hidden" aria-hidden="true">';
 		$html .= '<a class="bc-editable-cancel" href="#"><span class="dashicons dashicons-no-alt"></span></a>';
-		$html .= '<select name="wcbc_select2_item" class="bc-editable-select2" style="width:50%;max-width:20em;">';
-		$html .= '<option></option>';
+	
+		$html .= '<select name="wcbc_select2_item" class="bc-editable-select2" style="width:100%;max-width:20em;">';
+		$html .= '<option value=""></option>';
 		$html .= '</select>';
-		$html .= '<input type="hidden" class="bc-editable-wc_item_id" value="'.esc_html($item->wc_item_id).'">';
-		$html .= '<a class="button bc-editable-submit" href="#" > Simpan </a>';
+	
+		$html .= '<input type="hidden" class="bc-editable-wc_item_id" value="' . esc_attr($item->wc_item_id) . '">';
+	
+		$html .= '<a class="button bc-editable-submit" href="#">Simpan</a>';
 		$html .= '</div>';
-	 
+
 		echo $html;
 	}
 
@@ -143,16 +155,16 @@ class TableList extends \WP_List_Table {
 			case 'JE_CREATE':
 			case 'JE_PAID':
 			case 'JE_UNPAID':
-				$status = 'Create journal entry';
+				$status = __('Create journal entry', 'wji-plugin');
 				break;
 			case 'JE_DELETE':
-				$status = 'Delete journal entry';
+				$status = __('Delete journal entry', 'wji-plugin');
 				break;
 			case 'SA_CREATE':
-				$status = 'Create stock adjustment';
+				$status = __('Create stock adjustment', 'wji-plugin');
 				break;
 			case 'SA_DELETE':
-				$status = 'Delete stock adjustment';
+				$status = __('Delete stock adjustment', 'wji-plugin');
 				break;
 			default:
 				$status = '';
@@ -177,48 +189,65 @@ class TableList extends \WP_List_Table {
 				$status = 'Failed';
 				$label = 'danger';
 		}
-		return '<span class="bc-label '.$label.'">'.$status.'</span>';
+		return '<span class="bc-label '.$label.'">'.esc_html($status, 'wji-plugin').'</span>';
 	}
 
 	public function column_sync_note($item) {
-		
-		if(!$item->sync_note) {
-			$message = '';
-			switch($item->sync_action) {
-				case 'JE_CREATE':
-				case 'JE_PAID':
-				case 'JE_UNPAID':
-					if($item->sync_status == 'SYNCED') {
-						$je_id = $item->jurnal_entry_id;
-						$link = '<a href="https://my.jurnal.id/journal_entries/'.$je_id.'" target="_blank" title="View on Jurnal.ID">'.$je_id.'</a>';
-						$message = 'Journal entry succesfully created '.$link;
-						break;
-					}
-				case 'JE_DELETE':
-					if($item->sync_status == 'SYNCED') {
-						$message = 'Journal entry succesfully deleted';
-						break;
-					}
-				case 'SA_CREATE':
-					if($item->sync_status == 'SYNCED') {
-						$sa_id = $item->stock_adj_id;
-						$link = '<a href="https://my.jurnal.id/stock_adjustments/'.$sa_id.'" target="_blank" title="View on Jurnal.ID">'.$sa_id.'</a>';
-						$message = 'Stock adjustment succesfully created '.$link;
-						break;
-					}
-				case 'SA_DELETE':
-					if($item->sync_status == 'SYNCED') {
-						$message = 'Stock adjustment succesfully deleted';
-						break;
-					}
-				default:
-					$status = 'Gagal tersinkron';
-					$link = 'danger';
-			}
-			return $message;
+		// If sync_note is already set, return it.
+		if ($item->sync_note) {
+			return esc_html($item->sync_note);
 		}
-		
-		return $item->sync_note;
+
+		$message = '';
+
+		// Define base URL for Jurnal.ID links
+		$base_url = 'https://my.jurnal.id/';
+
+		// Generate message based on sync_action and sync_status
+		switch ($item->sync_action) {
+			case 'JE_CREATE':
+			case 'JE_PAID':
+			case 'JE_UNPAID':
+				if ($item->sync_status == 'SYNCED') {
+					$je_id = esc_html($item->jurnal_entry_id);
+					$link = '<a href="' . esc_url($base_url . 'journal_entries/' . $je_id) . '" target="_blank" title="' . esc_attr__('View on Jurnal.ID', 'wji-plugin') . '">' . $je_id . '</a>';
+					$message = sprintf(
+						/* translators: %s: link to the journal entry */
+						__('Journal entry successfully created %s', 'wji-plugin'),
+						$link
+					);
+				}
+				break;
+	
+			case 'JE_DELETE':
+				if ($item->sync_status == 'SYNCED') {
+					$message = __('Journal entry successfully deleted', 'wji-plugin');
+				}
+				break;
+	
+			case 'SA_CREATE':
+				if ($item->sync_status == 'SYNCED') {
+					$sa_id = esc_html($item->stock_adj_id);
+					$link = '<a href="' . esc_url($base_url . 'stock_adjustments/' . $sa_id) . '" target="_blank" title="' . esc_attr__('View on Jurnal.ID', 'wji-plugin') . '">' . $sa_id . '</a>';
+					$message = sprintf(
+						/* translators: %s: link to the stock adjustment */
+						__('Stock adjustment successfully created %s', 'wji-plugin'),
+						$link
+					);
+				}
+				break;
+	
+			case 'SA_DELETE':
+				if ($item->sync_status == 'SYNCED') {
+					$message = __('Stock adjustment successfully deleted', 'wji-plugin');
+				}
+				break;
+	
+			default:
+				$message = __('An unknown error occurred. Please retry sync.', 'wji-plugin');
+		}
+	
+		return $message;
 	}
 
 	public function column_sync_at($item) {
@@ -232,26 +261,24 @@ class TableList extends \WP_List_Table {
 	 * Add extra markup in the toolbars before or after the list
 	 * @param string $which, helps you decide if you add the markup after (bottom) or before (top) the list
 	 */
-	public function extra_tablenav($which){
-
-		// Search function reference: https://gist.github.com/wturnerharris/7413971
-		// Bulk action reference: https://wordpress.stackexchange.com/questions/364447/passing-search-query-and-custom-filter-to-wp-list-table-grid
-
+	public function extra_tablenav($which) {
 		// Only show in sync history tab
-		if( isset($_GET['tab']) && sanitize_text_field($_GET['tab']) !== 'order_options' ) {
+		if (isset($_GET['tab']) && sanitize_text_field($_GET['tab']) !== 'order_options') {
 			return;
 		}
-
-		$filter_status = isset($_GET['sync_status']) ? sanitize_text_field( $_GET['sync_status'] ) : '';
 	
-		// Display on the top of table
-		if( $which == "top" ) {?>
+		// Get the current filter status
+		$filter_status = isset($_GET['sync_status']) ? sanitize_text_field($_GET['sync_status']) : '';
+	
+		if ($which === "top") {
+			?>
 			<div class="alignleft actions bulkactions">
+				<label for="sync_status" class="screen-reader-text"><?php esc_html_e('Filter by sync status', 'wji-plugin'); ?></label>
 				<select name="sync_status" id="sync_status">
-					<option value="">All status</option>
-					<option value="SYNCED" 	<?php echo $filter_status == 'SYNCED'  ? ' selected' : '' ?>>Success</option>
-					<option value="PENDING" <?php echo $filter_status == 'PENDING' ? ' selected' : '' ?>>Pending</option>
-					<option value="ERROR" 	<?php echo $filter_status == 'ERROR'   ? ' selected' : '' ?>>Failed</option>
+					<option value=""><?php esc_html_e('All status', 'wji-plugin'); ?></option>
+					<option value="SYNCED" <?php selected($filter_status, 'SYNCED'); ?>><?php esc_html_e('Success', 'wji-plugin'); ?></option>
+					<option value="PENDING" <?php selected($filter_status, 'PENDING'); ?>><?php esc_html_e('Pending', 'wji-plugin'); ?></option>
+					<option value="ERROR" <?php selected($filter_status, 'ERROR'); ?>><?php esc_html_e('Failed', 'wji-plugin'); ?></option>
 				</select>
 			</div>
 			<?php

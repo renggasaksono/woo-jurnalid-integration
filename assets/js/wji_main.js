@@ -24,7 +24,7 @@ jQuery(function($){
 			},
 			cache: true
 		},
-		placeholder: 'Cari produk',
+		placeholder: 'Find product',
       	allowClear: true,
 		minimumInputLength: 2
 	});
@@ -47,11 +47,11 @@ jQuery(function($){
   					let conf = true;
   					let data = JSON.parse(resp);
   					if(data.status) {
-  						let error = "Produk ini sudah digunakan di :\n";
+  						let error = "This product is used in :\n";
   						for (index = 0; index < (data.data).length; ++index) {
   							error += "- "+data.data[index]+"\n";
 						}
-						error += "\nAnda yakin akan tetap melanjutkan?";
+						error += "\nDo you want to continue?";
   						conf = confirm(error);
   					}
 
@@ -79,20 +79,20 @@ jQuery(function($){
 			);
 		}
 		else {
-			alert('Item Jurnal.ID harus diisi');
+			alert('Jurnal.ID product is required');
 		}
 	});
 
 	// Account mapping
 	$('.wj-accounts-select2').select2({
-		placeholder: 'Pilih Akun Jurnal.ID',
+		placeholder: 'Choose account',
       	allowClear: true,
 		width : '50%'
 	});
 
 	// Warehouse mapping
 	$('.wj-warehouses-select2').select2({
-		placeholder: 'Pilih Gudang Jurnal.ID',
+		placeholder: 'Choose warehouse',
       	allowClear: true,
       	width : '200px'
 	});
