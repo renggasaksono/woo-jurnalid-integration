@@ -2,7 +2,7 @@
 /**
  * Plugin Name:             Jurnal.ID Sync for WooCommerce
  * Description:             Seamlessly sync orders and product data between WooCommerce and Jurnal.ID, ensuring accurate stock updates and automatic journal entries.
- * Version:                 5.0.0
+ * Version:                 5.0.1
  * Requires at least:       5.5
  * Author:                  Rengga Saksono
  * Author URI:              https://id.linkedin.com/in/renggasaksono
