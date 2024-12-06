@@ -132,7 +132,8 @@ class StockAdjustment {
                 'stock_adj_id' => $body->stock_adjustment->id,
                 'sync_status' => 'SYNCED',
                 'sync_note' => '',
-                'sync_data' => json_encode($data)
+                'sync_data' => json_encode($data),
+                'sync_at' => date("Y-m-d H:i:s")
             ];
         } else {
             // Failed
